@@ -1,6 +1,7 @@
 \documentclass[a4paper,12pt,ngerman]{scrartcl}
 \usepackage{babel}
 \usepackage{mathptmx}
+\usepackage{titlesec}
 \usepackage[T1]{fontenc}
 \usepackage[utf8x]{inputenc}
 \usepackage[a4paper,lmargin=2.5cm,rmargin=2.5cm,tmargin=2.0cm,bmargin=2.0cm,footskip=0.5cm]{geometry}
@@ -8,6 +9,12 @@
 \usepackage{amssymb}
 \usepackage{graphicx}
 \usepackage{hyperref}
+
+\setkomafont{sectionentry}{\normalfont}
+
+\titleformat{\section}
+  {\normalfont\Large\bfseries}
+  {\thesection}{1em}{}
 
 \graphicspath{ {.} }
 
@@ -37,7 +44,7 @@
 	\vfill
 \end{titlepage}
 \clearpage
-\tableofcontents
+{\normalfont\tableofcontents}
 \clearpage
 
 \section{Fachliche Kurzfassung}
