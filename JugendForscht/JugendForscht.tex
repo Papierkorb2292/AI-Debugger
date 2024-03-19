@@ -1,7 +1,6 @@
 \documentclass[a4paper,12pt,ngerman]{scrartcl}
 \usepackage{babel}
 \usepackage{mathptmx}
-\usepackage{titlesec}
 \usepackage[T1]{fontenc}
 \usepackage[utf8x]{inputenc}
 \usepackage[a4paper,lmargin=2.5cm,rmargin=2.5cm,tmargin=2.0cm,bmargin=2.0cm,footskip=0.5cm]{geometry}
@@ -10,13 +9,11 @@
 \usepackage{graphicx}
 \usepackage{hyperref}
 
-\setkomafont{sectionentry}{\normalfont}
+\addtokomafont{sectionentry}{\normalfont}
+\addtokomafont{section}{\normalfont}
+\addtokomafont{subsection}{\normalfont}
 
-\titleformat{\section}
-  {\normalfont\Large\bfseries}
-  {\thesection}{1em}{}
-
-\graphicspath{ {.} }
+\graphicspath{ {./images/} }
 
 \renewcommand{\baselinestretch}{1.5} 
 
@@ -31,7 +28,7 @@
 	
 	Projektbetreuende: PLACEHOLDER
 	
-	Thema des Projekts: Kann eine KI beim Debuggen eines Programmes helfen?
+	Thema des Projekts: Kann eine KI beim Debuggen eines Programms helfen?
 	
 	Fachgebiet: Informatik
 	
@@ -45,16 +42,54 @@
 	\vfill
 \end{titlepage}
 \clearpage
-{\normalfont\tableofcontents}
+\tableofcontents
 \clearpage
 
 \section{Fachliche Kurzfassung}
 
 \section{Motivation und Fragestellung}
 
+Mit den letzten Fortschritten und dem öffentlichen Zugang zu KI, werden viele Möglichkeiten untersucht, wie eine KI beim Programmieren helfen kann. So gibt es beispielsweise schon länger die Möglichkeit Code Vorschläge von einer KI wie Tabnine oder Github Copilot zu erhalten und mit LLMs, wie ChatGPT, lässt sich auch ein ganzer Codeblock automatisch schreiben.
+
+Wir haben uns gefragt, ob KI Programmierenden auch beim Debuggen von geschriebenen Programmen helfen kann. Die KI ``Devin'' kann bereits selbst Programme schreiben und debuggen, benutzt allerdings zum debuggen \texttt{print} Statements, um den Zustand des Programms zu überwachen, indem dieser Stellenweise in die Textausgabe geschrieben wird. Unser Ziel ist es jedoch die KI mit einem Debug Server, den auch Programmierende in ihrem Editor sonst benutzen, kommunizieren zu lassen. Ein weiterer Vorteil hiervon ist, dass man selbst zusammen mit der KI debuggen kann, indem man die KI nur Teile des Debuggen übernehmen lässt, und man den Rest noch selbst über den Editor vornimmt.
+
 \section{Hintergrund und theoretische Grundlagen}
 
+\subsection{KI}
+
+Als KI (Künstliche Intelligenz) bezeichnet man häufig Verfahren zur Datenverarbeitung, für dir keine genaue Handlungsanweisung festgelegt werden, sondern die mit Hilfe von Maschinellen Lernen erstellt wird, was einfach gesagt bedeutet, dass man die Paramater des Verfahrens stückweise ändert, um bei Eingangsdaten, für die schon Ausgangsdaten bekannt sind, die Ausgangsdaten des Verfahrens so nah wie möglich an die erwarteten zu bekommen. Oft liegt der KI an neuronales Netzwerk zugrunde, in welchem Eingangsdaten über mehrere Iterationen hinweg verschiedenen gewichtet und addiert werden können, um am Ende auf die Ausgangsdaten zu kommen (TODO: Genauere Erklärung?).
+
+Als LLM (Large Language Model) bezeichnet man KIs, die Textdaten verarbeiten und auf solche trainiert sind. Ein bekanntes Beispiel ist ChatGPT: Eine KI, welcher der Benutzer Textanfragen schreiben, und die dann selbst eine Textantwort produziert. LLMs zeichnen sich zudem durch ihre
+
+\subsection{Debugging}
+
+Beim debuggen eines Programm mit einem Debugger, verbindet sich der Editor mit einem Debug Server,  der das Programm ausführt und das Program auch pausieren kann, damit der Editor den Zustand des Programms zu einem bestimmten Punkt anzeigen kann. Während das Programm pausiert ist, lässt sich außerdem mit dem Editor Schritt für Schritt durch das Programm durchgehen, um die Änderungen im Zustand des Programms zu beobachten.
+
+\subsection{Debug Adapter}
+
+Weil ein Debug Server direkt mit dem auszuführendem Program interagiert, ist die Schnittstelle zum Debug Server oft spezifisch zur Sprache des Programs. Um den Editor mit dem Debug Server zu verbinden, wird deshalb ein Debug Server Adapter benutzt, der spezifisch zu einem Debug Server ist, und für welchen für die Kommunikation mit dem Editor von Microsoft das Debug Adapter Protokoll (DAP) festgelegt wurde. Für jeden Debug Server kann so auch ein Debug Adapter angeboten werden, der mit dem Debug Server kommunizieren kann.
+
+Folgendes ist eine Veranschaulichung, wie der Debug Prozess also aufgebaut ist:
+
+\begin{center}
+	\includegraphics[width=0.5\textwidth]{debugger}
+\end{center}
+
 \section{Vorgehensweise, Materialien und Methoden}
+
+Um zu testen, ob es möglich ist, eine KI auf diese Art und Weise beim Debuggen unterstützen zu lassen, werden wir selbst unsere Idee hierzu umsetzen, und verschiedene Ansätze, um mit der KI zu interagieren, auszuprobieren.
+
+Um eine KI in den Debug Prozess zu interagieren, fügen wir zunächst eine Middleware zwischen Editor und Debug Adapter hinzu, durch welche alle Nachrichten zwischen dem Editor und Debug Adapter laufen, damit die KI diese beobachten und unterbrechen kann. Außerdem wird es hiermit möglich Nachrichten, die durch die KI eingebracht werden, an den Editor und Debug Adapter zu senden. Dies macht es möglich für die KI Kontrolle über den Debug Prozess zu nehmen.
+
+Es gibt verschiedene Möglichkeiten, wie die KI selbst laufen kann. Zunächst werden wir von OpenAI das KI Modell  GPT-4 benutzen, mit welchem man über das Internet kommuniziert. Es wäre außerdem möglich später verschiedene KI Modelle auszuprobieren, um zu testen, wie gut verschiedene Modelle debuggen können.
+
+Der wichtigste Teil, ist allerdings, wie die KI mit ihren Nachrichten mit dem Benutzer, dem Editor und dem Debug Adapter kommuniziert. Der Benutzer muss nämlich die Möglichkeiten haben Nachrichten an die KI zu senden, die KI muss antworten können, und zusätzlich muss eine Übersetzung zwischen DAP Nachrichten (normalerweise werden diese zwischen Editor und Debug Adapter gesendet) und dem Text, über welchen die KI kommuniziert, stattfinden. Im folgenden wird dieser Teil als ``KI Debugger Dienst'' betitelt. Außerdem muss der Editor den Kontext, also beispielsweise den Inhalt der Dateien, in denen gedebuggt wird, an den KI Debugger Dienst senden, damit dieser weiß, welche Positionen in den Dateien den verschiedenen Teilen des laufenden Programms entsprechen, um an diesen Stellen pausieren zu können.
+
+Folgendes Diagramm veranschaulicht nochmal den erweiterten Aufbau des Debuggers zusammen mit der Kommunikation mit der KI.
+
+\begin{center}	
+	\includegraphics[width=0.5\textwidth]{ai_integration}
+\end{center}
 
 \section{Ergebnisse}
 
@@ -64,9 +99,17 @@
 
 \section{Quellen- und Literaturverzeichnis}
 
-TODO: Quellen zur Extension Entwicklung (Guide und VSCode Debug Client Source)
-
-BEISPIEL: \url{https://de.wikipedia.org/}, besucht am 01.01.1970
+Wikimedia Foundation Inc.,  ``Künstliche Intelligenz - Wikipedia'', grundlegende Information zu künstlicher Intelligenz\\
+\url{https://de.wikipedia.org/wiki/K\%C3\%BCnstliche_Intelligenz}, besucht am 19.03.2024\\
+Wikimedia Foundation Inc.,  ``Large language model - Wikipedia'', grundlegende Information zu Large Language Models\\
+\url{https://en.wikipedia.org/wiki/Large_language_model}, besucht am 19.03.2024\\
+Wikimedia Foundation Inc.,  ``Language model - Wikipedia'', grundlegende Information zu Language Models \\
+\url{https://en.wikipedia.org/wiki/Language_model}, besucht am 19.03.2024\\
+\vspace{1em}\\
+Microsoft, ``Extension API | Visual Studio Code Extension API'', Anleitung zum Entwickeln einer VSCode Extension\\
+\url{https://code.visualstudio.com/api}, besucht am 19.03.2024\\
+Microsoft, ``vscode/blob/main/src/vs/workbench/contrib/debug/node/debugAdapter.ts at main microsoft/vscode'', VSCode Quellcode zur Kommunikation mit Debug Adaptern\\
+\url{https://github.com/microsoft/vscode/blob/main/src/vs/workbench/contrib/debug/node/debugAdapter.ts}, besucht am 19.03.2024
 
 \section{Unterstützungsleistungen}
 
