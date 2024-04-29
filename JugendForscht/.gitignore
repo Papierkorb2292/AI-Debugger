@@ -4,3 +4,5 @@
 *.pdf
 *.toc
 *.tps 
+*.bbl
+*.blg
