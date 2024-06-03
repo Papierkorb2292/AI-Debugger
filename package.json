@@ -29,6 +29,10 @@
               "delegate": {
                 "type": "string",
                 "description": "The debug configuration to run with an AI debugger attached"
+              },
+              "prompt": {
+                "type": "string",
+                "description": "The prompt to give the AI, telling it what to debug"
               }
             }
           }

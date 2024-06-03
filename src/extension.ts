@@ -32,6 +32,7 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(vscode.debug.registerDebugAdapterDescriptorFactory('ai-debugger', {
 		createDebugAdapterDescriptor: function (session: vscode.DebugSession, executable: vscode.DebugAdapterExecutable | undefined): vscode.ProviderResult<vscode.DebugAdapterDescriptor> {
 			const delegate = session.configuration.delegate;
+			const prompt = session.configuration.prompt;
 			const dummyAdapter = new DummyDebugAdapter();
 			const dummyInlineImplementation = new vscode.DebugAdapterInlineImplementation(dummyAdapter);
 			dummyAdapter.disposable = injectDebuggerMiddleware()
