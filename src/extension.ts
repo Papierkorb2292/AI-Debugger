@@ -5,7 +5,8 @@ import { Socket } from 'net';
 import { ChildProcess } from 'child_process';
 import { PassThrough }from 'stream';
 import { DebugAdapterInlineImplementation } from 'vscode';
-import { wrapDebugAdapter, wrapDebugAdapterStreams } from './DebuggerWrapper';
+import { wrapDebugAdapter, wrapDebugAdapterStreams } from './DebuggerMiddleware';
+import { DummyDebugAdapter } from './DummyDebugAdapter';
 const net = require('net');
 const cp = require('child_process');
 
@@ -28,13 +29,22 @@ export function activate(context: vscode.ExtensionContext) {
 
 	context.subscriptions.push(disposable);
 
-	context.subscriptions.push(injectDebuggerWrapper());
+	context.subscriptions.push(vscode.debug.registerDebugAdapterDescriptorFactory('ai-debugger', {
+		createDebugAdapterDescriptor: function (session: vscode.DebugSession, executable: vscode.DebugAdapterExecutable | undefined): vscode.ProviderResult<vscode.DebugAdapterDescriptor> {
+			const delegate = session.configuration.delegate;
+			const dummyAdapter = new DummyDebugAdapter();
+			const dummyInlineImplementation = new vscode.DebugAdapterInlineImplementation(dummyAdapter);
+			dummyAdapter.disposable = injectDebuggerMiddleware()
+			vscode.debug.startDebugging(session.workspaceFolder, delegate, session)
+			return dummyInlineImplementation;
+		}
+	}));
 }
 
 // This method is called when your extension is deactivated
 export function deactivate() {}
 
-function injectDebuggerWrapper(): { dispose(): void } {
+function injectDebuggerMiddleware(): { dispose(): void } {
 	const createConnection = net.createConnection;
 	net.createConnection = function(...args: any[]) {
 		console.log("createConnection");

@@ -17,6 +17,36 @@
         "command": "ai-debugger.helloWorld",
         "title": "Hello World"
       }
+    ],
+    "debuggers": [
+      {
+        "type": "ai-debugger",
+        "label": "AI Debugger",
+
+        "configurationAttributes": {
+          "launch": {
+            "properties": {
+              "delegate": {
+                "type": "string",
+                "description": "The debug configuration to run with an AI debugger attached"
+              }
+            }
+          }
+        },
+
+        "configurationSnippets": [
+          {
+            "label": "AI Debugger",
+            "description": "A new configuration for attaching an ai to an exisiting debug configuration",
+            "body": {
+              "type": "ai-debugger",
+              "request": "launch",
+              "name": "AI: ${1:Delegate Debug Configuration}",
+              "delegate": "${1:Delegate Debug Configuration}"
+            }
+          }
+        ]
+      }
     ]
   },
   "scripts": {
