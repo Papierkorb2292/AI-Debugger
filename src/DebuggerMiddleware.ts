@@ -96,13 +96,13 @@ export function wrapDebugAdapterStreams(streams: DebuggerStreams): DebuggerStrea
 export function wrapDebugAdapter(debugAdapter: vscode.DebugAdapter): vscode.DebugAdapter {
 	const wrappedOnDidSendMessage = new vscode.EventEmitter<vscode.DebugProtocolMessage>();
 	debugAdapter.onDidSendMessage((message: vscode.DebugProtocolMessage) => {
-		console.log("onDidSendMessage", message);
+		console.log("onDidSendMessage", JSON.stringify(message));
 		wrappedOnDidSendMessage.fire(message);
 	});
 	return {
 		onDidSendMessage: wrappedOnDidSendMessage.event,
 		handleMessage: (message: vscode.DebugProtocolMessage) => {
-			console.log("handleMessage", message);
+			console.log("handleMessage", JSON.stringify(message));
 			return debugAdapter.handleMessage(message);
 		},
 		dispose: () => {
