@@ -47,6 +47,13 @@
 
 \section{Fachliche Kurzfassung}
 
+Unsere Frage ist es, ob es möglich ist, dass eine KI für einen Programmierer den Debug Prozess übernimmt und selbstständig im Code den Grund für gegebene Fehler finden kann, ähnlich dazu, wie man es als Programmierer tun würde. Hierzu fügen wir eine Middleware in den Debug Prozess von VSCode zwischen Editor und Debug Adapter ein, welcher in der Kommunikation des Debuggers Nachrichten mitlesen, unterbrechen und hinzufügen kann. Ein großes Problem ist, wie die KI mit dieser Middleware kommunizieren wird, da LLMs nur Text Nachrichten empfangen und zurücksenden können. Wir benötigen also eine Konvertierung zwischen dem Debug Adapter Protokoll (DAP) und einem für die KI interpretierbaren und produzierbaren Text.
+
+Um den Debug Prozess auf diese Art und Weise verändern zu können, benutzen wir eine VSCode Extension, die beim Starten des Debug Adapters die Funktionen, die zur Kommunikation benutzt werden, mit eigenen Funktionen ersetzt, welche mit der KI kommunizieren und Nachrichten weiterhin mit den originalen Funktionen an den Editor oder an den Debug Adapter senden können.
+
+TODO: Wie funktioniert Konvertierung
+TODO: Ergebnisse
+
 \section{Motivation und Fragestellung}
 
 Mit den letzten Fortschritten und dem öffentlichen Zugang zu KI, werden viele Möglichkeiten untersucht, wie eine KI beim Programmieren helfen kann. So gibt es beispielsweise schon länger die Möglichkeit Code Vorschläge von einer KI wie Tabnine oder Github Copilot zu erhalten und mit LLMs, wie ChatGPT, lässt sich auch ein ganzer Codeblock automatisch schreiben.
