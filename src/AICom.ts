@@ -149,7 +149,7 @@ export function createPauseNotification(line: number, column: number, file: stri
 
 registerAICmd('BREAKPOINT', id => ({
   context: AICmdContext.NONE,
-  explanation: `you can set breakpoints at a position in the code by starting your message with "${id}" followed by the line number and the file name.`,
+  explanation: `you can set breakpoints in the code by starting your message with "${id}" followed by the line number and the file name.`,
   callback: async (params, aiDebuggerService) => {
     const [lineParam, fileParam] = params.trim().split(" ");
     const line = parseInt(lineParam.trim());
@@ -189,12 +189,12 @@ registerAICmd('LINE', id => ({
     const [lineNumber, url] = params.trim().split(" ");
     const fileContent = await aiDebuggerService.fileGetter(`file:///${url}`);
     const lineContent = fileContent.split("\n")[parseInt(lineNumber) - 1];
-    return `The line contains the following code: ${lineContent}`;
+    return `THe line contains: ${lineContent}`;
   }
 }));
 registerAICmd('CONTINUE', id => ({
   context: AICmdContext.PAUSED,
-  explanation: `you can continue the execution of the code with the message "${id}".`,
+  explanation: `you can continue the execution with the message "${id}".`,
   callback: async (_params, aiDebuggerService) => {
     const promise = aiDebuggerService.schedulePauseAINotification();
     aiDebuggerService.grabDebuggerReponse(
