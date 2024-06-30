@@ -88,7 +88,7 @@ Um zu testen, ob es möglich ist, eine KI auf diese Art und Weise beim Debuggen 
 
 Um eine KI in den Debug Prozess zu interagieren, fügen wir zunächst eine Middleware zwischen Editor und Debug Adapter hinzu, durch welche alle Nachrichten zwischen dem Editor und Debug Adapter laufen, damit die KI diese beobachten und unterbrechen kann. Außerdem wird es hiermit möglich, Nachrichten, die durch die KI eingebracht werden, an den Editor und Debug Adapter zu senden. Dies macht es möglich für die KI Kontrolle über den Debug Prozess zu nehmen.
 
-Es gibt verschiedene Möglichkeiten, wie die KI selbst laufen kann. Zunächst werden wir von OpenAI das KI Modell GPT-4 benutzen, mit welchem man über das Internet kommuniziert. Es wäre außerdem möglich später verschiedene KI Modelle auszuprobieren, um zu testen, wie gut verschiedene Modelle debuggen können.
+Es gibt verschiedene Möglichkeiten, wie die KI selbst laufen kann. Zunächst werden wir von OpenAI das KI Modell GPT-4o benutzen, mit welchem man über das Internet kommuniziert. Es wäre außerdem möglich später verschiedene KI Modelle auszuprobieren, um zu testen, wie gut verschiedene Modelle debuggen können.
 
 Der wichtigste Teil, ist allerdings, wie die KI mit ihren Nachrichten mit dem Benutzer, dem Editor und dem Debug Adapter kommuniziert. Der Benutzer muss nämlich die Möglichkeiten haben Nachrichten an die KI zu senden, die KI muss antworten können, und zusätzlich muss eine Übersetzung zwischen DAP Nachrichten (normalerweise werden diese zwischen Editor und Debug Adapter gesendet) und dem Text, über welchen die KI kommuniziert, stattfinden. Im folgenden wird dieser Teil als ``KI Debugger Dienst'' betitelt. Außerdem muss der Editor den Kontext, also beispielsweise den Inhalt der Dateien, in denen gedebuggt wird, an den KI Debugger Dienst senden, damit dieser weiß, welche Positionen in den Dateien den verschiedenen Teilen des laufenden Programms entsprechen, um an diesen Stellen pausieren zu können.
 
@@ -97,6 +97,17 @@ Folgendes Diagramm veranschaulicht nochmal den erweiterten Aufbau des Debuggers 
 \begin{center}	
 	\includegraphics[width=0.5\textwidth]{ai_integration}
 \end{center}
+
+\section {Komprimierung und Verarbeitung der Konversation}
+Um zu verstehen, wie die Kommunikation zwischen dem Debug Adapter (DA) und dem KI-Debugger-Dienst (KDD) funktioniert, müssen deren Komprimierung und Verarbeitung genauer betrachtet werden.
+
+Zunächst werden die Daten des DA in für den KDD verständliche Begriffe übersetzt. In der aktuellen Version sind dies: 'BREAKPOINT', 'LINE', 'CONTINUE', 'STEP', 'STEPINTO', 'STEPOUT', 'VARIABLE', 'ERROR' und 'CAUSE'.
+
+Anschließend werden diese 'AI Commands' in eine sprachliche Form gebracht, die die Kommunikation mit dem LLM (Large Language Model) ermöglicht. Dies geschieht durch festgelegte Sätze. Zum Beispiel entspricht das 'AI Command BREAKPOINT' dem Satz: 'You can set breakpoints in the code by starting your message with \$\{id\} followed by the line number and the file name.' Dieses Prinzip wird auf jedes 'AI Command' angewendet.
+
+Nun, da die Befehle für die KI vorliegen, werden diese übermittelt und die Antworten empfangen. Die jeweiligen Antworten sind so formatiert, dass sie ohne großen Aufwand weiterverarbeitet werden können.
+
+Ein weiterer wichtiger Aspekt ist die Komprimierung der übermittelten Daten. Dies ist aufgrund des Bezahlmodells von OpenAI wichtig, das nach dem Prinzip 'You pay w
 
 \section{Ergebnisse}
 
