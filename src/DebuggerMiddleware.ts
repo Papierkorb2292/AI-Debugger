@@ -1,5 +1,8 @@
 import { PassThrough } from 'stream';
 import * as vscode from 'vscode';
+import { AIDebuggerService, ChatGPTClient, prompt, PromptOptions} from "./AICom";
+import { ProtocolMessage } from './DebuggerProtocol';
+import { MessageInjector } from './MessageInjector';
 
 export interface DebuggerStreams {
 	stdin: NodeJS.WritableStream;
@@ -72,7 +75,7 @@ export class StreamDebugAdapter implements vscode.DebugAdapter {
 	}
 }
 
-export function wrapDebugAdapterStreams(streams: DebuggerStreams): DebuggerStreams {
+export function wrapDebugAdapterStreams(streams: DebuggerStreams, aiDebuggerService: AIDebuggerService): DebuggerStreams {
 	const inputAdapter = new StreamDebugAdapter(streams);
 	const resultPassThroughIn = new PassThrough();
 	const resultPassThroughOut = new PassThrough();
@@ -80,7 +83,7 @@ export function wrapDebugAdapterStreams(streams: DebuggerStreams): DebuggerStrea
 		stdin: resultPassThroughIn,
 		stdout: resultPassThroughOut
 	});
-	const wrappedDebugAdapter = wrapDebugAdapter(inputAdapter);
+	const wrappedDebugAdapter = wrapDebugAdapter(inputAdapter, aiDebuggerService);
 	wrappedDebugAdapter.onDidSendMessage((message: vscode.DebugProtocolMessage) => {
 		resultDebugAdapter.handleMessage(message);
 	});
@@ -93,17 +96,50 @@ export function wrapDebugAdapterStreams(streams: DebuggerStreams): DebuggerStrea
 	};
 }
 
-export function wrapDebugAdapter(debugAdapter: vscode.DebugAdapter): vscode.DebugAdapter {
+export function wrapDebugAdapter(debugAdapter: vscode.DebugAdapter, aiDebuggerService: AIDebuggerService): vscode.DebugAdapter {
 	const wrappedOnDidSendMessage = new vscode.EventEmitter<vscode.DebugProtocolMessage>();
+
+	const debuggerMessageInjector = new MessageInjector(msg => wrappedOnDidSendMessage.fire(msg));
+	const editorMessageInjector = new MessageInjector(msg => debugAdapter.handleMessage(msg));
+	
+	aiDebuggerService.setMessageSenders(
+		msg => debuggerMessageInjector.injectMessage(msg),
+		msg => editorMessageInjector.injectMessage(msg)
+	);
+
 	debugAdapter.onDidSendMessage((message: vscode.DebugProtocolMessage) => {
-		console.log("onDidSendMessage", JSON.stringify(message));
-		wrappedOnDidSendMessage.fire(message);
+		const protocolMessage = message as ProtocolMessage;
+		if(aiDebuggerService.onDebuggerMessage(protocolMessage)) {
+			editorMessageInjector.mapIfResponse(protocolMessage);
+			debuggerMessageInjector.queueMessage(protocolMessage);
+		} else {
+			editorMessageInjector.mapIfResponse(protocolMessage);
+			debuggerMessageInjector.removeMessage(protocolMessage.seq);
+		}
+
+		//Move to AIDebuggerService?
+		/*if((message as any).command == "exceptionInfo"){
+			console.log("\n\n\n\nregistered exception")
+
+			const registerException: string = (message as any).body
+			console.log("exce: ", registerException);
+			let prompt : prompt = {exceptionInfo: registerException, cmd: "fix"}
+			
+			console.log("promt: ", JSON.stringify(prompt))
+			console.log("\n\n\n\n");
+		}*/
 	});
 	return {
 		onDidSendMessage: wrappedOnDidSendMessage.event,
 		handleMessage: (message: vscode.DebugProtocolMessage) => {
-			console.log("handleMessage", JSON.stringify(message));
-			return debugAdapter.handleMessage(message);
+			const protocolMessage = message as ProtocolMessage;
+			if(aiDebuggerService.onEditorMessage(protocolMessage)) {
+				debuggerMessageInjector.mapIfResponse(protocolMessage);
+				editorMessageInjector.queueMessage(protocolMessage);
+			} else {
+				debuggerMessageInjector.mapIfResponse(protocolMessage);
+				editorMessageInjector.removeMessage(protocolMessage.seq);
+			}
 		},
 		dispose: () => {
 			wrappedOnDidSendMessage.dispose();

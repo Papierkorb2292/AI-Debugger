@@ -5,11 +5,20 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "type": "ai-debugger",
+            "request": "launch",
+            "name": "AI: Python Debugger: Current File",
+            "delegate": "Python Debugger: Current File",
+            "prompt": "The test in line 9 in file 'C:\\Users\\Lars\\Programmieren\\misc\\AI-Debugger\\testWorkspace\\test.py' is failing, because `sumNumbers` doesn't return the correct result"
+        },
+
+        {
             "name": "Python Debugger: Current File",
             "type": "debugpy",
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal"
-        }
+        },
+        
     ]
 }
