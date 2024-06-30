@@ -27,7 +27,7 @@ def find_maximum(numbers: list[int]) -> int:
 def is_prime(number: int) -> bool:
     if number < 2:
         return False
-    for i in range(2, math.sqrt(number)):
+    for i in range(2, int(math.sqrt(number))):
         if number % i == 0:
             return False
     return True
@@ -49,7 +49,7 @@ class BinaryTreeNode:
 def get_height(tree: BinaryTreeNode):
     if tree is None:
         return 0
-    return max(get_height(tree.left), get_height(tree.right))
+    return 1 + max(get_height(tree.left), get_height(tree.right))
 
 # Level 6
 
@@ -93,7 +93,7 @@ def test_get_height():
     tree.left = BinaryTreeNode(2)
     tree.right = BinaryTreeNode(3)
     tree.left.left = BinaryTreeNode(4)
-    assert get_height(tree) == 3
+    assert get_height(tree) == 2
 
 def test_is_balanced():
     tree = BinaryTreeNode(1)
@@ -111,4 +111,6 @@ if __name__ == "__main__":
     test_sumNumbers()
     test_find_maximum()
     test_is_prime()
+    test_get_height()
+    test_is_balanced()
     print("All tests passed!")
