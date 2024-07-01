@@ -146,7 +146,13 @@ Zuletzt hat die KI außerdem ein ``CAUSE [Beschreibung]'' Kommando, mit dem sie 
 
 \subsection{Komprimierung der Konversation}
 
-Ein weiterer wichtiger Aspekt ist die Komprimierung der übermittelten Daten. Dies ist aufgrund des Bezahlmodells von OpenAI wichtig, das nach dem Prinzip 'You pay w
+Ein weiterer wichtiger Aspekt ist die Komprimierung der übermittelten Daten. Dies ist aufgrund des Beizahlmodells von OpenAI wichtig, das nach dem Prinzip sogennanter 'Tokens' fungiert. Dieser Prozess heißt Tokenisierung und funktioniert nach Folgender Reihenfolge:
+\begin{itemize}
+	\item 1. Normalisierung des Textes: Im Kern wird hier nichts weiter gemacht als Großbuchstaben in Kleinbuchstaben umgewandelt und unnötige Leerzeichen entfernt werden 
+	\item 2. Aufteilung: Der normalisierte Text wird nun in Wörter zerlegt. Dies kann durch das Aufteilen an Leerzeichen und Satzzeichen geschehen
+	\item 3. Tokenisierung: Der nun vorliegende Text wird zum Schluss von Algorithmen zerlegt und in Tokens mit einer vordefinierten ID eingeteilt. Aufgrund dieser ID ist es dem GPT Modell möglich das Wort zu interpretieren.
+\end{itemize}
+Unser Ziel ist also so viel sogenannte 'one-word-tokens' zu verwenden wie möglich. Um das zu erreichen, benutzen wir KI, speziell das ChatGPT-4o Modell um Prompts zu optimieren.
 
 \subsection{Erheben von Daten}
 
@@ -214,6 +220,8 @@ Microsoft, ``Overview [über das Debug Adapter Protokol]'', grundlegende Informa
 Microsoft, ``Extension API | Visual Studio Code Extension API'', Anleitung zum Entwickeln einer VSCode Extension\\
 \url{https://code.visualstudio.com/api}, besucht am 19.03.2024\\
 Microsoft, ``vscode/blob/main/src/vs/workbench/contrib/debug/node/debugAdapter.ts at main microsoft/vscode'', VSCode Quellcode zur Kommunikation mit Debug Adaptern\\
-\url{https://github.com/microsoft/vscode/blob/main/src/vs/workbench/contrib/debug/node/debugAdapter.ts}, besucht am 19.03.2024
+\url{https://github.com/microsoft/vscode/blob/main/src/vs/workbench/contrib/debug/node/debugAdapter.ts}, besucht am 19.03.2024\\
+OpenAi\\
+\url {https://openai.com}\\
 
 \end{document}
