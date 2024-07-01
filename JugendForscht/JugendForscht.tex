@@ -96,7 +96,7 @@ Beim Debuggen eines Programm mit einem Debugger, verbindet sich der Editor mit e
 
 \subsection{Debug Adapter}
 
-Weil ein Debug Server direkt mit dem auszuführenden Programm interagiert, ist die Schnittstelle zum Debug Server oft spezifisch zur Sprache des Programmes. Um den Editor mit dem Debug Server zu verbinden, wird deshalb ein Debug Server Adapter benutzt, der spezifisch zu einem Debug Server ist, und für welchen die Kommunikation mit dem Editor von Microsoft auf das Debug Adapter Protokoll (DAP) festgelegt wurde. Für jeden Debug Server kann so auch ein Debug Adapter angeboten werden, der mit dem Debug Server kommunizieren kann$^4$.
+Weil ein Debug Server direkt mit dem auszuführenden Programm interagiert, ist die Schnittstelle zum Debug Server oft spezifisch zur Sprache des Programms. Um den Editor mit dem Debug Server zu verbinden, wird deshalb ein Debug Server Adapter benutzt, der spezifisch zu einem Debug Server ist, und für welchen die Kommunikation mit dem Editor von Microsoft auf das Debug Adapter Protokoll (DAP) festgelegt wurde. Für jeden Debug Server kann so auch ein Debug Adapter angeboten werden, der mit dem Debug Server kommunizieren kann$^4$.
 
 Folgendes ist eine Veranschaulichung, wie der Debug Prozess also aufgebaut ist:
 
@@ -122,7 +122,7 @@ Folgendes Diagramm veranschaulicht nochmal den erweiterten Aufbau des Debuggers 
 	\includegraphics[width=0.5\textwidth]{ai_integration}
 \end{center}
 
-Um zu verstehen, wie die Kommunikation zwischen dem Debug Adapter und dem KI-Debugger-Dienst funktioniert, betrachten wir erstmal genauer, wie der KI-Debugger-Dienst die verschiedenen Nachrichten vearbeitet:
+Um zu verstehen, wie die Kommunikation zwischen dem Debug Adapter und dem KI-Debugger-Dienst funktioniert, betrachten wir erstmal genauer, wie der KI-Debugger-Dienst die verschiedenen Nachrichten verarbeitet:
 
 Da DAP Nachrichten im JSON Format gesendet werden und dabei oft viele Informationen über den Zustand des Programms enthalten, bei denen wichtig ist, dass sie akkurat sind, wie Dateipfade, Breakpoint Ids, etc., haben wir uns dagegen entschieden, die KI direkt diese JSON Objekte lesen und auslesen zu lassen, da dann die KI viel mehr Wert darauf legen müsste, vollständig fehlerfreie JSON Objekte auszugeben, was die Qualität des eigentlichen Debuggens beinträchtigen könnte.
 
@@ -146,7 +146,7 @@ Zuletzt hat die KI außerdem ein ``CAUSE [Beschreibung]'' Kommando, mit dem sie 
 
 \subsection{Komprimierung der Konversation}
 
-Ein weiterer wichtiger Aspekt ist die Komprimierung der übermittelten Daten. Dies ist aufgrund des Beizahlmodells von OpenAI wichtig, das nach dem Prinzip sogennanter 'Tokens' fungiert. Dieser Prozess heißt Tokenisierung und funktioniert nach Folgender Reihenfolge:
+Ein weiterer wichtiger Aspekt ist die Komprimierung der übermittelten Daten. Dies ist aufgrund des Beizahlmodells von OpenAI wichtig, das nach dem Prinzip sogenannter 'Tokens' fungiert. Dieser Prozess heißt Tokenisierung und funktioniert nach Folgender Reihenfolge:
 \begin{itemize}
 	\item 1. Normalisierung des Textes: Im Kern wird hier nichts weiter gemacht als Großbuchstaben in Kleinbuchstaben umgewandelt und unnötige Leerzeichen entfernt werden 
 	\item 2. Aufteilung: Der normalisierte Text wird nun in Wörter zerlegt. Dies kann durch das Aufteilen an Leerzeichen und Satzzeichen geschehen
@@ -178,13 +178,13 @@ Folgendes sind die Ergebnisse der KI für die verschiedenen Funktionen:
 	\item Funktion 7 (Bei der Implementation des Algorithmus wurde vergessen, rekursiv für die Child Nodes zu überprüfen, ob sie balanziert sind): Die KI meint fälschlicherweise, dass der Fehler im Algorithmus für Höhe läge, denn obwohl der Bug dort behoben wurde, schlägt sie wieder vor \texttt{return 1} mit \texttt{return 0} zu ersetzen (Obwohl im Code \texttt{return -1} stand).
 \end{itemize}
 
-Während wir die Tests durchgeführt haben, ist uns aufgefallen, dass die KI oft dazu neigt, sich,verglichen zum normalen Debuggen, nicht genug über den Code und den Zustand des Programs zu informieren. Wenn wir beispielsweise die KI auf eine der Test-Zeilen verwiesen haben (wie \texttt{assert calculate_factorial(1) == 1}), hat sie sich oft nicht selbst diese Zeile angeschaut, sondern hat direkt blind ein ``STEPINTO'' Kommando ausgeführt. Außerdem hat sie sich dementsprechend auch nicht die Zeilen von vor und nach dem Bug angeschaut, von der sie beispielsweise auf den Aufbau der Binären Bäume hätte schließen können.
+Während wir die Tests durchgeführt haben, ist uns aufgefallen, dass die KI oft dazu neigt, sich,verglichen zum normalen Debuggen, nicht genug über den Code und den Zustand des Programms zu informieren. Wenn wir beispielsweise die KI auf eine der Test-Zeilen verwiesen haben (wie \texttt{assert calculate\_factorial(1) == 1}), hat sie sich oft nicht selbst diese Zeile angeschaut, sondern hat direkt blind ein ``STEPINTO'' Kommando ausgeführt. Außerdem hat sie sich dementsprechend auch nicht die Zeilen von vor und nach dem Bug angeschaut, von der sie beispielsweise auf den Aufbau der Binären Bäume hätte schließen können.
 
 \section{Ergebnissdiskussion}
 
 Die Ergebnisse sind vielversprechend, da sie zeigen, dass es heutigen KIs bereits möglich ist die Funktionsweise von Debug Prozessen zu verstehen und zu reproduzieren.
 
-Allerdings muss auch beachtet werden, dass die Bugs in unseren Tests für die KI speziell für dieses Projekt eingebaut wurden, und es somit eine Abweichung von natürlich auftretenden Bugs geben könnte. Außerdem waren die Algorithem, in denen wir diese Bugs eingebaut haben, häufig vorkommende Algorithmen, bei denen es möglich wäre, dass die KI diese bereits kannte. Aus diesen Gründen könnten die Ergebnisse in einem realen Debug Prozess abweichen.
+Allerdings muss auch beachtet werden, dass die Bugs in unseren Tests für die KI speziell für dieses Projekt eingebaut wurden, und es somit eine Abweichung von natürlich auftretenden Bugs geben könnte. Außerdem waren die Algorithmen, in denen wir diese Bugs eingebaut haben, häufig vorkommende Algorithmen, bei denen es möglich wäre, dass die KI diese bereits kannte. Aus diesen Gründen könnten die Ergebnisse in einem realen Debug Prozess abweichen.
 
 Darüber hinaus ist uns aufgefallen, dass die KI vor allem bei komplexeren Datenstrukturen, wie dem Binären Baum aus Aufgabe 6 und 7, Probleme hatte, den Zustand dieser Datenstruktur aufzurufen. Dies könnte daran liegen, dass sich die KI oft nicht die Funktionsdeklaration angeschaut hat, da direkt in der ersten Zeile der Funktion pausiert wurde, sodass die KI nicht sicher wusste, wie die Parameter der Funktion heißen. Außerdem ist der Zugang, den die KI zu Variablen hatte, limitierter als der für Programmierende, da die KI sich nur direkt die Werte von Variablen ausgeben lassen kann (was bei Funktionen und Objekten häufig nur Speicheraddressen sind), wohingegen Programmierende sich auch den Inhalt dieses Speichers anschauen können. Eine mögliche Lösung hierfür wäre es, der KI auch über die Felder von Objekten zu informieren, sodass sie sich anschließend auch den Inhalt dieser Felder anschauen kann.
 
@@ -194,7 +194,7 @@ Zusätzlich dazu ist das Problem aufgekommen, dass die KI zu wenig Zeilen einlie
 
 \subsection{Fazit}
 
-Zusammengefasst lässt sich sagen, dass wir mit unserem System erfolgreich eine KI in den Debug Prozess zu integrieren konnten, und dass diese KI in der Lage ist, den Debug Prozess zu kontrollieren. In einer solchen Integration sehen wir viele Entwicklungsmöglichkeitein, um einen KI Debugger als ein für Programmierende nützliches Tool bereitszustellen. Wir sind der Meinung, dass, auch wenn im Verlaufe der Tests noch weitere Herausforderungen offentsichtlich geworden sind, die KI mit verbesserten Prompts und mehr Kommandos für noch mehr Kontrolle über den Debug Prozess auch kompliziertere Bugs finden könnte, da es bereits andere KIs, wie Github Copilot gibt, die ein großes Verständnis von Programmen aufzeigen und dadurch bereits für Programmierende ein nützliches Tool sind. Würde eine KI mit einem solchen Ausmaß an Verständis von einer Codebase (also einem gesamten Projekt) ebenfalls die Möglichkeit gegeben werden, einen Debug Prozess zu steuern, erwarten wir eine beträchtliche Verbesserung in der Leistung des KI Debuggers.
+Zusammengefasst lässt sich sagen, dass wir mit unserem System erfolgreich eine KI in den Debug Prozess zu integrieren konnten, und dass diese KI in der Lage ist, den Debug Prozess zu kontrollieren. In einer solchen Integration sehen wir viele Entwicklungsmöglichkeitein, um einen KI Debugger als ein für Programmierende nützliches Tool bereitzustellen. Wir sind der Meinung, dass, auch wenn im Verlaufe der Tests noch weitere Herausforderungen offentsichtlich geworden sind, die KI mit verbesserten Prompts und mehr Kommandos für noch mehr Kontrolle über den Debug Prozess auch kompliziertere Bugs finden könnte, da es bereits andere KIs, wie Github Copilot gibt, die ein großes Verständnis von Programmen aufzeigen und dadurch bereits für Programmierende ein nützliches Tool sind. Würde eine KI mit einem solchen Ausmaß an Verständis von einer Codebase (also einem gesamten Projekt) ebenfalls die Möglichkeit gegeben werden, einen Debug Prozess zu steuern, erwarten wir eine beträchtliche Verbesserung in der Leistung des KI Debuggers.
 
 \subsection{Ausblick}
 
