@@ -6,3 +6,5 @@
 *.tps 
 *.bbl
 *.blg
+*.dvi
+*.ps
