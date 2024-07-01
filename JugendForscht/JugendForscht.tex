@@ -147,11 +147,11 @@ Zuletzt hat die KI außerdem ein ``CAUSE [Beschreibung]'' Kommando, mit dem sie 
 \subsection{Komprimierung der Konversation}
 
 Ein weiterer wichtiger Aspekt ist die Komprimierung der übermittelten Daten. Dies ist aufgrund des Beizahlmodells von OpenAI wichtig, das nach dem Prinzip sogenannter 'Tokens' fungiert. Dieser Prozess heißt Tokenisierung und funktioniert nach Folgender Reihenfolge:
-\begin{itemize}
-	\item 1. Normalisierung des Textes: Im Kern wird hier nichts weiter gemacht als Großbuchstaben in Kleinbuchstaben umgewandelt und unnötige Leerzeichen entfernt werden 
-	\item 2. Aufteilung: Der normalisierte Text wird nun in Wörter zerlegt. Dies kann durch das Aufteilen an Leerzeichen und Satzzeichen geschehen
-	\item 3. Tokenisierung: Der nun vorliegende Text wird zum Schluss von Algorithmen zerlegt und in Tokens mit einer vordefinierten ID eingeteilt. Aufgrund dieser ID ist es dem GPT Modell möglich das Wort zu interpretieren.
-\end{itemize}
+\begin{enumerate}
+	\item Normalisierung des Textes: Im Kern wird hier nichts weiter gemacht als Großbuchstaben in Kleinbuchstaben umgewandelt und unnötige Leerzeichen entfernt werden 
+	\item Aufteilung: Der normalisierte Text wird nun in Wörter zerlegt. Dies kann durch das Aufteilen an Leerzeichen und Satzzeichen geschehen
+	\item Tokenisierung: Der nun vorliegende Text wird zum Schluss von Algorithmen zerlegt und in Tokens mit einer vordefinierten ID eingeteilt. Aufgrund dieser ID ist es dem GPT Modell möglich das Wort zu interpretieren.
+\end{enumerate}
 Unser Ziel ist also so viel sogenannte 'one-word-tokens' zu verwenden wie möglich. Um das zu erreichen, benutzen wir KI, speziell das ChatGPT-4o Modell um Prompts zu optimieren.
 
 \subsection{Erheben von Daten}
@@ -208,20 +208,20 @@ Eine weitere große Verbesserungsmöglichkeit ist es, dem bereits von uns erstel
 
 \section{Quellen- und Literaturverzeichnis}
 
-Wikimedia Foundation Inc.,  ``Künstliche Intelligenz - Wikipedia'', grundlegende Information zu künstlicher Intelligenz\\
+$^1$ Wikimedia Foundation Inc.,  ``Künstliche Intelligenz - Wikipedia'', grundlegende Information zu künstlicher Intelligenz\\
 \url{https://de.wikipedia.org/wiki/K\%C3\%BCnstliche_Intelligenz}, besucht am 19.03.2024\\
-Wikimedia Foundation Inc.,  ``Large language model - Wikipedia'', grundlegende Information zu Large Language Models\\
+$^2$ Wikimedia Foundation Inc.,  ``Large language model - Wikipedia'', grundlegende Information zu Large Language Models\\
 \url{https://en.wikipedia.org/wiki/Large_language_model}, besucht am 19.03.2024\\
-Wikimedia Foundation Inc.,  ``Language model - Wikipedia'', grundlegende Information zu Language Models \\
+$^3$ Wikimedia Foundation Inc.,  ``Language model - Wikipedia'', grundlegende Information zu Language Models \\
 \url{https://en.wikipedia.org/wiki/Language_model}, besucht am 19.03.2024\\
-Microsoft, ``Overview [über das Debug Adapter Protokol]'', grundlegende Information zum Debug Adapter Protokoll
+$^4$ Microsoft, ``Overview [über das Debug Adapter Protokol]'', grundlegende Information zum Debug Adapter Protokoll
 \url{https://microsoft.github.io/debug-adapter-protocol/overview.html}, besucht am 25.03.2024\\
 \vspace{1em}\\
-Microsoft, ``Extension API | Visual Studio Code Extension API'', Anleitung zum Entwickeln einer VSCode Extension\\
+$^5$ Microsoft, ``Extension API | Visual Studio Code Extension API'', Anleitung zum Entwickeln einer VSCode Extension\\
 \url{https://code.visualstudio.com/api}, besucht am 19.03.2024\\
-Microsoft, ``vscode/blob/main/src/vs/workbench/contrib/debug/node/debugAdapter.ts at main microsoft/vscode'', VSCode Quellcode zur Kommunikation mit Debug Adaptern\\
+$^6$ Microsoft, ``vscode/blob/main/src/vs/workbench/contrib/debug/node/debugAdapter.ts at main microsoft/vscode'', VSCode Quellcode zur Kommunikation mit Debug Adaptern\\
 \url{https://github.com/microsoft/vscode/blob/main/src/vs/workbench/contrib/debug/node/debugAdapter.ts}, besucht am 19.03.2024\\
-OpenAi\\
+$^7$ OpenAi\\
 \url {https://openai.com}\\
 
 \end{document}
