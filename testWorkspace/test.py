@@ -1,19 +1,19 @@
 import math
 
-# Level 1
+# Level 1 - Success ("incorrectly uses addition instead of multiplication")
 def calculate_factorial(n: int) -> int:
     if n == 0:
         return 1
     return n + calculate_factorial(n-1)
 
-# Level 2
+# Level 2 - Success ("index must start at 0")
 def sumNumbers(*nums: int) -> int:
     a = 0
     for i in range(1, len(nums)):
         a += nums[i]
     return a
 
-# Level 3
+# Level 3 - Success ("comparison operator should be `>` instead of `<`)
 def find_maximum(numbers: list[int]) -> int:
     if len(numbers) == 0:
         return None
@@ -23,7 +23,7 @@ def find_maximum(numbers: list[int]) -> int:
             max_num = num
     return max_num
 
-# Level 4
+# Level 4 - Sucess ("loop should include upper bound") - THe AI did this without looking at the value of the variable?
 def is_prime(number: int) -> bool:
     if number < 2:
         return False
@@ -32,10 +32,10 @@ def is_prime(number: int) -> bool:
             return False
     return True
 
-# Level 5
+# Level 5 - Sucess ("incorrect condition: end of the range should be exlusive")
 
 class StringRange:
-    def __init(self, startInclusive,endExclusive):
+    def __init__(self, startInclusive,endExclusive):
         self.startInclusive = startInclusive
         self.endExclusive = endExclusive
 
@@ -45,7 +45,7 @@ class StringRange:
 def containsCursor(stringRange: StringRange, cursor: int) -> bool:
     return cursor >= stringRange.startInclusive and cursor <= stringRange.endExclusive
 
-# Level 6
+# Level 6 - No sucess (Correct in the beginning, but the direct code change it tries to make is not correct: "Base case for leaf returns incorrect values (Yes, it should return 0 instead of 1 when a node without children is given). Base case should return 0 when `tree` is `None`, not 1 (Wrong, it already returns 0, it should actually return -1 instead, so a node without children can return 0)")
 
 # A potential problem for the AI could be to understand the tree structure just form the string value
 # Maybe tell the ai that any expression can be passed to "VARIABLE", so it could also request values such as "tree.left"
@@ -61,10 +61,10 @@ class BinaryTreeNode:
 
 def get_height(tree: BinaryTreeNode):
     if tree is None:
-        return 0
+        return -1
     return 1 + max(get_height(tree.left), get_height(tree.right))
 
-# Level 7
+# Level 7 - No sucess (Blames get_height, "Should return 0 instead of 1 when node is `NONE`", it should bei neither 0 or 1, get_height is correct!)
 
 def is_balanced(tree: BinaryTreeNode):
     if tree is None:
@@ -124,11 +124,11 @@ def test_is_balanced():
     assert is_balanced(tree) == False
 
 if __name__ == "__main__":
-    test_calculate_factorial()
-    test_sumNumbers()
-    test_find_maximum()
-    test_is_prime()
-    test_contains_cursor()
+    #test_calculate_factorial()
+    #test_sumNumbers()
+    #test_find_maximum()
+    #test_is_prime()
+    #test_contains_cursor()
     test_get_height()
     test_is_balanced()
     print("All tests passed!")

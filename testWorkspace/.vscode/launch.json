@@ -9,7 +9,7 @@
             "request": "launch",
             "name": "AI: Python Debugger: Current File",
             "delegate": "Python Debugger: Current File",
-            "prompt": "The test in line 9 in file 'C:\\Users\\Lars\\Programmieren\\misc\\AI-Debugger\\testWorkspace\\test.py' is failing, because `sumNumbers` doesn't return the correct result"
+            "prompt": "The test in line 124 in file 'C:\\Users\\micro\\Desktop\\Programmieren\\ai-debugger\\testWorkspace\\test.py' is failing, because `is_balanced` doesn't return the correct result"
         },
 
         {
