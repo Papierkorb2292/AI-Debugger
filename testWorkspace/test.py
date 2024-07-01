@@ -34,6 +34,19 @@ def is_prime(number: int) -> bool:
 
 # Level 5
 
+class StringRange:
+    def __init(self, startInclusive,endExclusive):
+        self.startInclusive = startInclusive
+        self.endExclusive = endExclusive
+
+    def __str__(self):
+        return f"StringRange(startInclusive={self.startInclusive},endInclusive={self.endExclusive})"
+    
+def containsCursor(stringRange: StringRange, cursor: int) -> bool:
+    return cursor >= stringRange.startInclusive and cursor <= stringRange.endExclusive
+
+# Level 6
+
 # A potential problem for the AI could be to understand the tree structure just form the string value
 # Maybe tell the ai that any expression can be passed to "VARIABLE", so it could also request values such as "tree.left"
 
@@ -51,7 +64,7 @@ def get_height(tree: BinaryTreeNode):
         return 0
     return 1 + max(get_height(tree.left), get_height(tree.right))
 
-# Level 6
+# Level 7
 
 def is_balanced(tree: BinaryTreeNode):
     if tree is None:
@@ -88,6 +101,10 @@ def test_is_prime():
     assert is_prime(10) == False
     assert is_prime(11) == True
 
+def test_contains_cursor():
+    assert containsCursor(StringRange(0, 10), 5) == True
+    assert containsCursor(StringRange(2, 9), 9) == False
+
 def test_get_height():
     tree = BinaryTreeNode(1)
     tree.left = BinaryTreeNode(2)
@@ -111,6 +128,7 @@ if __name__ == "__main__":
     test_sumNumbers()
     test_find_maximum()
     test_is_prime()
+    test_contains_cursor()
     test_get_height()
     test_is_balanced()
     print("All tests passed!")
