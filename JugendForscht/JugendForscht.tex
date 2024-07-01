@@ -150,20 +150,40 @@ Ein weiterer wichtiger Aspekt ist die Komprimierung der übermittelten Daten. Di
 
 Da nun die KI in den Debug Prozess integriert wurde, ist der nächste Schritt die Fähigkeiten der KI auszutesten, um herauszufinden, ob sie tatsächlich in der Lage ist, ein Programm erfolgreich zu debuggen. Hierfür haben wir uns entschieden, die KI auf verschiedene Probleme zu testen, die wir selbst in Programmen eingebaut haben, und die KI dabei zu beobachten, wie sie diese Probleme löst.
 
-Hierbei können wir für jedes Problem beurteilen, wie präzise und für den User verständlich sowie hilfreich die KI den Grund für das Problem formulieren kann. Außerdem können wir beurteilen, wie sehr sie es geschafft hat den zugrundeliegenden Fehler zu erkennen, oder ob es ihr auschließlich gelang einen Folgefehler zu erkennen.
+Hierbei können wir für jedes Problem beurteilen, wie präzise und für den User verständlich sowie hilfreich die KI den Grund für das Problem formulieren kann. Außerdem können wir beurteilen, wie sehr sie es geschafft hat den zugrundeliegenden Fehler zu erkennen, oder ob es ihr auschließlich gelang einen Folgefehler zu erkennen. Um dies zu tun, haben wir insgesamt sieben Funktionen geschrieben, von denen jede einen Bug mit steigender Komplexität enthält, den die KI gefragt wird zu finden.
 
 \section{Ergebnisse}
+
+Bei den ersten Tests hatte die KI zunächst Probleme zu verstehen, dass sie Debuggen soll, und meinte unter anderem, dass es ihr schlichtweg nicht möglich wäre Code zu debuggen, obwohl der KI die Kommandos bereitgestellt wurden.
+
+\begin{itemize}
+	\item Funktion 1 (Fakultät wird mit Addition statt Multiplikation berechnet): Die KI konnte den Bug finden und korrekt beschreiben
+	\item Funktion 2 (Bei der Summenberechnung wird mit Index 1 statt 0 angefangen): Die KI konnte den Bug finden und korrekt beschreiben
+	\item Funktion 3 (Bei der Maximumfindung wird der \texttt{<} statt dem \texttt{>} Operator verwendet): Die KI konnte den Bug finden und korrekt beschreiben
+	\item Funktion 4 (Bei der Primzahlbedingung fehlt bei Quadratzahlen der zweithöchste Teiler): Die KI konnte den Bug finden und eine mögliche Behebung beschreiben, hat aber nicht direkt die Verbindung zu Quadratzahlen gezogen
+	\item Funktion 5 (Bei der Bestimmung, ob die Position in dem Intervall liegt, wird das Ende nicht als Exklusiv, sondern Inklusiv betrachtet): Die KI konnte den Bug finden und korrekt beschreiben
+	\item Funktion 6 (Wenn \texttt{tree is None} zutrifft, sollte eigentlich -1 statt 0 zurückgegeben werden): Die KI erkennt zwar, dass bei Leaf Nodes nicht der richtige Wert zurückgegeben wird, allerdings denkt die KI, dass dies gelöst werden kann, indem man \texttt{return 1} mit \texttt{return 0} ersetzt, obwohl im Code eigentlich schon \texttt{return 0} steht.
+	\item Funktion 7 (Bei der Implementation des Algorithmus wurde vergessen, rekursiv für die Child Nodes zu überprüfen, ob sie balanziert sind): Die KI meint fälschlicherweise, dass der Fehler im Algorithmus für Höhe läge, denn obwohl der Bug dort behoben wurde, schlägt sie wieder vor \texttt{return 1} mit \texttt{return 0} zu ersetzen.
+\end{itemize}
 
 TODO: Ausformulieren
 Aufgekommene Probleme:
 - KI kann manchmal Probleme haben, die eigene Rolle zu verstehen
 - KI liest manchmal nicht genug Zeilen ein
 
-- Funktioniert aber sonst gut :D
-
 \section{Ergebnissdiskussion}
 
+Fehlerquellen:
+- Fabrizierte Bugs
+- Standard Algorithmen
+- KI hat vielleicht schlechten Zugang zu den Werten der Variablen
+
 \section{Fazit und Ausblick}
+
+\subsection{Fazit}
+
+- Integration bringt noch Herausforderungen (mit Beispielien)
+- Enormes Potenzial (vielleicht nochmal Bezug auf Devin)
 
 \subsection{Ausblick}
 

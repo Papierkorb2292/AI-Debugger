@@ -61,7 +61,7 @@ class BinaryTreeNode:
 
 def get_height(tree: BinaryTreeNode):
     if tree is None:
-        return -1
+        return 0
     return 1 + max(get_height(tree.left), get_height(tree.right))
 
 # Level 7 - No sucess (Blames get_height, "Should return 0 instead of 1 when node is `NONE`", it should bei neither 0 or 1, get_height is correct!)

@@ -6,7 +6,7 @@ Version=4
 MainFile=JugendForscht.tex
 UseBibTeX=0
 UseMakeIndex=0
-ActiveProfile=
+ActiveProfile=LaTeX ⇨ PDF
 ProjectLanguage=de
 ProjectDialect=DE
 
