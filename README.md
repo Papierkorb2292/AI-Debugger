@@ -8,6 +8,8 @@ Existing coding AIs, like Devin, are able to debug code by adding print statemen
 
 Note that that, at the moment, the AI doesn't seem to be able to solve more complex bugs, especially when data structures are involved, to which the AI doesn't have a good access. Examples of bugs the AI was and wasn't able to solve, can be found in `testWorkspace/test.py`.
 
+Also note that the AI has only been tested together with the python debugger. There's no guarentee that injecting the AI communication works with every debugger.
+
 ## Usage
 
 This extension doesn't provide its own AI. Thus, if you want to try it out, you must already have access to an LLM. Because we are currently using ChatGPT-4o, the code to communicate with it already exists in the extension. To use it, you must create a `src/Secrets.ts` file and add your OpenAI API key to it: `export const openAIKey = "..."`. Note that we don't provide any guarantee concerning the amount of tokens send to the AI. However, if you'd like to use another AI, you can instead implement the `AIService` interface yourself and replace the `ChatGPTClient` in `extension.ts:44` with it.
