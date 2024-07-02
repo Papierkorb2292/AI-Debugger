@@ -208,7 +208,7 @@ registerAICmd('LINE', id => ({
     const [lineNumber, url] = params.trim().split(" ");
     const fileContent = await aiDebuggerService.fileGetter(`file:///${await getAbsoluteFilePath(url)}`);
     const lineContent = fileContent.split("\n")[parseInt(lineNumber) - 1];
-    return `THe line contains: ${lineContent}`;
+    return `The line contains: ${lineContent}`;
   }
 }));
 registerAICmd('CONTINUE', id => ({
