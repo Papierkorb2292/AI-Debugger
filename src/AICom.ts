@@ -4,8 +4,6 @@ import * as vscode from 'vscode';
 import { ProtocolMessage, Response, SetBreakpointsArguments } from './DebuggerProtocol';
 
 export interface prompt {
-  preCmd?: string;
-  exceptionInfo?: string;
   role?: string;
   cmd: string;
 }
@@ -140,11 +138,32 @@ export function registerAICmd(id: string, cmd: (id: string) => AICmd) {
   aiCmdRegistry.set(id, cmd(id));
 }
 
+function getAbsoluteFilePath(file: string) {
+  return vscode.workspace.findFiles(file).then(files => files[0].fsPath);
+}
+
+function getRelativeFilePath(file: string) {
+  let uri: vscode.Uri;
+  if(file.match(/^.*:\/\/\//)) {
+    // Already has a file scheme
+    uri = vscode.Uri.parse(file);
+  } else {
+    uri = vscode.Uri.file(file);
+  }
+  for(const folder of vscode.workspace.workspaceFolders || [ ]) {
+    if(uri.fsPath.startsWith(folder.uri.fsPath)) {
+      return uri.fsPath.slice(folder.uri.fsPath.length + 1 /*remove leading slash */);
+    }
+  }
+  console.warn("Paused file path not in workspace:", file);
+  return file;
+}
+
 export const aiNextCmdInstruction = `Proceed with your next action`;
 export const aiPauseNotification = `PAUSED`;
 
 export function createPauseNotification(line: number, column: number, file: string) {
-  return `${aiPauseNotification} line=${line} column=${column} file=${file}`;
+  return `${aiPauseNotification} line=${line} column=${column} file=${getRelativeFilePath(file)}`;
 }
 
 registerAICmd('BREAKPOINT', id => ({
@@ -153,7 +172,7 @@ registerAICmd('BREAKPOINT', id => ({
   callback: async (params, aiDebuggerService) => {
     const [lineParam, fileParam] = params.trim().split(" ");
     const line = parseInt(lineParam.trim());
-    const file = fileParam.trim();
+    const file = await getAbsoluteFilePath(fileParam.trim());
     let args = aiDebuggerService.existingBreakpoints.get(file);
     if(!args) {
       args = { source: { path: file } };
@@ -187,7 +206,7 @@ registerAICmd('LINE', id => ({
   explanation: `you can retrieve a line of code by starting your message with "${id}" followed by the line number and the file url.`,
   callback: async (params, aiDebuggerService) => {
     const [lineNumber, url] = params.trim().split(" ");
-    const fileContent = await aiDebuggerService.fileGetter(`file:///${url}`);
+    const fileContent = await aiDebuggerService.fileGetter(`file:///${await getAbsoluteFilePath(url)}`);
     const lineContent = fileContent.split("\n")[parseInt(lineNumber) - 1];
     return `THe line contains: ${lineContent}`;
   }

@@ -9,15 +9,12 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onDebugResolve:ai-debugger",
+    "onDebugDynamicConfigurations:ai-debugger"
+  ],
   "main": "./dist/extension.js",
   "contributes": {
-    "commands": [
-      {
-        "command": "ai-debugger.helloWorld",
-        "title": "Hello World"
-      }
-    ],
     "debuggers": [
       {
         "type": "ai-debugger",
@@ -44,7 +41,8 @@
               "type": "ai-debugger",
               "request": "launch",
               "name": "AI: ${1:Delegate Debug Configuration}",
-              "delegate": "${1:Delegate Debug Configuration}"
+              "delegate": "${1:Delegate Debug Configuration}",
+              "prompt": "The prompt has not been filled in yet"
             }
           }
         ]
