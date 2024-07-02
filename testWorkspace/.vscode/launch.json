@@ -9,7 +9,7 @@
             "request": "launch",
             "name": "AI: Python Debugger: Current File",
             "delegate": "Python Debugger: Current File",
-            "prompt": "The test in line 82 in file 'test.py' is failing, because `calculate_factorial` doesn't return the correct result"
+            "prompt": "The test in line 113 in file 'test.py' is failing, because `get_height` doesn't return the correct result"
         },
         {
             "name": "Python Debugger: Current File",

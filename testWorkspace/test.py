@@ -124,11 +124,11 @@ def test_is_balanced():
     assert is_balanced(tree) == False
 
 if __name__ == "__main__":
-    test_calculate_factorial()
-    test_sumNumbers()
-    test_find_maximum()
-    test_is_prime()
-    test_contains_cursor()
+    #test_calculate_factorial()
+    #test_sumNumbers()
+    #test_find_maximum()
+    #test_is_prime()
+    #test_contains_cursor()
     test_get_height()
     test_is_balanced()
     print("All tests passed!")

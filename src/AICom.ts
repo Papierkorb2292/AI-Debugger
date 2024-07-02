@@ -279,29 +279,12 @@ registerAICmd('STEPOUT', id => ({
     return promise;
   }
 }));
-registerAICmd('VARIABLE', id => ({
+registerAICmd('EVAL', id => ({
   context: AICmdContext.PAUSED,
-  explanation: `you can read a variable value by starting your message with "${id}" followed by the variable name.`,
+  explanation: `you can evaluate an expression by starting your message with "${id}" followed by the expression.`,
   callback: async (params, aiDebuggerService) => {
     const variable_name = params.trim();
-    /*const scopes = await aiDebuggerService.grabDebuggerReponse(
-      await aiDebuggerService.sendToDebugger!({
-        type: "request",
-        command: "scopes",
-        seq: -1,
-        arguments: { frameId: aiDebuggerService.topFrameId!! }
-      })
-    );
-    const variables = await aiDebuggerService.grabDebuggerReponse(
-      await aiDebuggerService.sendToDebugger!({
-        type: "request",
-        command: "variables",
-        seq: -1,
-        arguments: { variablesReference: scopes.body.scopes[0].variablesReference, filter: "named" }
-      })
-    );
-    const value = variables.body.variables.find((variable: any) => variable.name === variable_name).value;*/
-    const response = await aiDebuggerService.grabDebuggerReponse(
+    const evaluation = await aiDebuggerService.grabDebuggerReponse(
       await aiDebuggerService.sendToDebugger!({
         type: "request",
         command: "evaluate",
@@ -309,7 +292,27 @@ registerAICmd('VARIABLE', id => ({
         arguments: { expression: variable_name, frameId: aiDebuggerService.topFrameId!! }
       })
     );
-    return `The variable value of ${variable_name} is: ${response.body.result}`;
+    const children = await aiDebuggerService.grabDebuggerReponse(
+      await aiDebuggerService.sendToDebugger!({
+        type: "request",
+        command: "variables",
+        seq: -1,
+        arguments: { variablesReference: evaluation.body.variablesReference }
+      })
+    );
+    let childrenString = "";
+    if(children.body.variables.length === 0) {
+      childrenString = `This value has no children`;
+    } else if(children.body.variables.some((variable: any) => variable.name === "0")) {
+      const highestIndex = children.body.variables.reduce((maxIndex: number, variable: any) => {
+        const index = parseInt(variable.name);
+        return isNaN(index) ? maxIndex : Math.max(maxIndex, index);
+      });
+      childrenString = `This value is indexable from 0 to ${highestIndex}`;
+    } else{
+      childrenString = `This value has the following properties: ${children.body.variables.map((variable: any) => variable.name).join(", ")}`;
+    }
+    return `The value of ${variable_name} is: ${evaluation.body.result}. ${childrenString}`;
   }
 }));
 registerAICmd('ERROR', id => ({
