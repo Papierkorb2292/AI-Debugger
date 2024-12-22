@@ -2,7 +2,6 @@ import axios, { AxiosInstance } from 'axios';
 import { openAIKey } from './Secrets';
 import * as vscode from 'vscode';
 import { ProtocolMessage, Response, SetBreakpointsArguments } from './DebuggerProtocol';
-
 export interface prompt {
   role?: string;
   cmd: string;
@@ -353,10 +352,10 @@ function createAIInstructionPrompt(userPrompt: PromptOptions) {
       ${getCmdExplanationsForContext(AICmdContext.PAUSED)}
 
       When you send such a message, do not include any explanation, just the command.
-      Request lines of codes as needed, at and around the pause location.
+      Always request lines of codes at and around the pause location using the "LINE" command.
       Make sure not to step over lines that throw errors.
 
-      As a debugger, you will receive the message ${aiPauseNotification} when the code execution is paused, followed by the line number, column number and the file name.
+      As a debugger, you will receive the message ${aiPauseNotification} when the code execution is paused, followed by the line number, column number and the file name of the code that will be executed next.
       
       The following bug is to be fixed: ${userPrompt.prompt.cmd}
 
@@ -422,7 +421,7 @@ export class AIDebuggerService {
     if(message.type === "event" && message.event === "stopped") {
       if(!this.hasStarted) {
         this.hasStarted = true;
-        console.log("INITIAL:", this.initialPrompt);
+        console.log("AI INITIAL:", this.initialPrompt);
         this.aiService.sendPrompt(createAIInstructionPrompt(this.initialPrompt))
           .then(response => this.handleAiResponse(response));
       }
@@ -450,14 +449,14 @@ export class AIDebuggerService {
   }
 
   handleAiResponse(response: string) {
-    console.log("RESPONSE:", response);
+    console.log("AI RESPONSE:", response);
     const cmdEnd = response.indexOf(' ');
     const cmd = cmdEnd === -1 ? response : response.slice(0, cmdEnd);
     const params = cmdEnd === -1 ? '' : response.slice(cmdEnd + 1);
     const aiCmd = aiCmdRegistry.get(cmd.toUpperCase());
     if(aiCmd) {
       aiCmd.callback(params, this).then(response => {
-        console.log("PROMPT:", response);
+        console.log("AI PROMPT:", response);
         this.aiService.sendPrompt(copyPromptOptionsForPrompt(this.initialPrompt, { cmd: response }))
           .then(response => this.handleAiResponse(response));
       });
