@@ -3,8 +3,6 @@ import { openAIKey } from './Secrets';
 import * as vscode from 'vscode';
 import { ProtocolMessage, Response, SetBreakpointsArguments } from './DebuggerProtocol';
 export interface prompt {
-  preCmd?: string;
-  exceptionInfo?: string;
   role?: string;
   cmd: string;
 }
@@ -139,11 +137,32 @@ export function registerAICmd(id: string, cmd: (id: string) => AICmd) {
   aiCmdRegistry.set(id, cmd(id));
 }
 
+function getAbsoluteFilePath(file: string) {
+  return vscode.workspace.findFiles(file).then(files => files[0].fsPath);
+}
+
+function getRelativeFilePath(file: string) {
+  let uri: vscode.Uri;
+  if(file.match(/^.*:\/\/\//)) {
+    // Already has a file scheme
+    uri = vscode.Uri.parse(file);
+  } else {
+    uri = vscode.Uri.file(file);
+  }
+  for(const folder of vscode.workspace.workspaceFolders || [ ]) {
+    if(uri.fsPath.startsWith(folder.uri.fsPath)) {
+      return uri.fsPath.slice(folder.uri.fsPath.length + 1 /*remove leading slash */);
+    }
+  }
+  console.warn("Paused file path not in workspace:", file);
+  return file;
+}
+
 export const aiNextCmdInstruction = `Proceed with your next action`;
 export const aiPauseNotification = `PAUSED`;
 
 export function createPauseNotification(line: number, column: number, file: string) {
-  return `${aiPauseNotification} line=${line} column=${column} file=${file}`;
+  return `${aiPauseNotification} line=${line} column=${column} file=${getRelativeFilePath(file)}`;
 }
 
 registerAICmd('BREAKPOINT', id => ({
@@ -152,7 +171,7 @@ registerAICmd('BREAKPOINT', id => ({
   callback: async (params, aiDebuggerService) => {
     const [lineParam, fileParam] = params.trim().split(" ");
     const line = parseInt(lineParam.trim());
-    const file = fileParam.trim();
+    const file = await getAbsoluteFilePath(fileParam.trim());
     let args = aiDebuggerService.existingBreakpoints.get(file);
     if(!args) {
       args = { source: { path: file } };
@@ -186,9 +205,9 @@ registerAICmd('LINE', id => ({
   explanation: `you can retrieve a line of code by starting your message with "${id}" followed by the line number and the file url.`,
   callback: async (params, aiDebuggerService) => {
     const [lineNumber, url] = params.trim().split(" ");
-    const fileContent = await aiDebuggerService.fileGetter(`file:///${url}`);
+    const fileContent = await aiDebuggerService.fileGetter(`file:///${await getAbsoluteFilePath(url)}`);
     const lineContent = fileContent.split("\n")[parseInt(lineNumber) - 1];
-    return `THe line contains: ${lineContent}`;
+    return `The line contains: ${lineContent}`;
   }
 }));
 registerAICmd('CONTINUE', id => ({
@@ -259,29 +278,12 @@ registerAICmd('STEPOUT', id => ({
     return promise;
   }
 }));
-registerAICmd('VARIABLE', id => ({
+registerAICmd('EVAL', id => ({
   context: AICmdContext.PAUSED,
-  explanation: `you can read a variable value by starting your message with "${id}" followed by the variable name. You cannot request a variable before it has been defined.`,
+  explanation: `you can evaluate an expression by starting your message with "${id}" followed by the expression.`,
   callback: async (params, aiDebuggerService) => {
     const variable_name = params.trim();
-    /*const scopes = await aiDebuggerService.grabDebuggerReponse(
-      await aiDebuggerService.sendToDebugger!({
-        type: "request",
-        command: "scopes",
-        seq: -1,
-        arguments: { frameId: aiDebuggerService.topFrameId!! }
-      })
-    );
-    const variables = await aiDebuggerService.grabDebuggerReponse(
-      await aiDebuggerService.sendToDebugger!({
-        type: "request",
-        command: "variables",
-        seq: -1,
-        arguments: { variablesReference: scopes.body.scopes[0].variablesReference, filter: "named" }
-      })
-    );
-    const value = variables.body.variables.find((variable: any) => variable.name === variable_name).value;*/
-    const response = await aiDebuggerService.grabDebuggerReponse(
+    const evaluation = await aiDebuggerService.grabDebuggerReponse(
       await aiDebuggerService.sendToDebugger!({
         type: "request",
         command: "evaluate",
@@ -289,7 +291,27 @@ registerAICmd('VARIABLE', id => ({
         arguments: { expression: variable_name, frameId: aiDebuggerService.topFrameId!! }
       })
     );
-    return `The variable value of ${variable_name} is: ${response.body.result}`;
+    const children = await aiDebuggerService.grabDebuggerReponse(
+      await aiDebuggerService.sendToDebugger!({
+        type: "request",
+        command: "variables",
+        seq: -1,
+        arguments: { variablesReference: evaluation.body.variablesReference }
+      })
+    );
+    let childrenString = "";
+    if(children.body.variables.length === 0) {
+      childrenString = `This value has no children`;
+    } else if(children.body.variables.some((variable: any) => variable.name === "0")) {
+      const highestIndex = children.body.variables.reduce((maxIndex: number, variable: any) => {
+        const index = parseInt(variable.name);
+        return isNaN(index) ? maxIndex : Math.max(maxIndex, index);
+      });
+      childrenString = `This value is indexable from 0 to ${highestIndex}`;
+    } else{
+      childrenString = `This value has the following properties: ${children.body.variables.map((variable: any) => variable.name).join(", ")}`;
+    }
+    return `The value of ${variable_name} is: ${evaluation.body.result}. ${childrenString}`;
   }
 }));
 registerAICmd('ERROR', id => ({
