@@ -58,9 +58,9 @@
 
 Unsere Frage ist es, ob es möglich ist, dass eine KI für einen Programmierer den Debug Prozess übernimmt und selbstständig im Code den Grund für gegebene Fehler finden kann, ähnlich dazu, wie man es als Programmierer tun würde. Hierzu fügen wir eine Middleware in den Debug Prozess von VSCode zwischen Editor und Debug Adapter ein, welcher in der Kommunikation des Debuggers Nachrichten mitlesen, unterbrechen und hinzufügen kann. Eine große Herausforderung ist, wie die KI mit dieser Middleware kommunizieren wird, da LLMs nur Text Nachrichten empfangen und zurücksenden können. Wir benötigen also eine Konvertierung zwischen dem Debug Adapter Protokoll (DAP) und einem für die KI interpretierbaren und produzierbaren Text.
 
-Um den Debug Prozess auf diese Art und Weise verändern zu können, benutzen wir eine VSCode Extension, die beim Starten des Debug Adapters die Funktionen, die zur Kommunikation benutzt werden, mit eigenen Funktionen ersetzt, welche mit der KI kommunizieren und Nachrichten weiterhin mit den originalen Funktionen an den Editor oder an den Debug Adapter senden können.
+Um den Debug Prozess auf diese Art und Weise verändern zu können, entwickeln wir eine VSCode Extension, die beim Starten des Debug Adapters die Funktionen, die zur Kommunikation benutzt werden, mit eigenen Funktionen ersetzt, welche mit der KI kommunizieren und Nachrichten weiterhin mit den originalen Funktionen an den Editor oder an den Debug Adapter senden können.
 
-Nun müssen die Daten des Debug Adapters (DA) in für die KI verständliche Begriffe übersetzt werden. Hierfür stellen wir der KI verschiedene Kommandos zum Empfangen oder Senden zur Verfügung, die von einem Übersetzer in DAP Nachrichten umgewandelt werden. Die KI kann so beispielsweise Breakpoints setzen, das Programm weiterlaufen lassen, oder den Wert einer Variable erfragen. Folgende Kommandos sind für die KI zum Senden verfügbar:
+Nun müssen die Daten des Debug Adapters (DA) in für die KI verständliche Begriffe übersetzt werden. Hierfür stellen wir der KI verschiedene Kommandos zum Empfangen oder Senden zur Verfügung, die von einem Übersetzer in DAP Nachrichten umgewandelt werden. Die KI kann so beispielsweise Breakpoints setzen, das Programm weiterlaufen lassen, oder den Wert einer Variable erfragen. Folgende Kommandos haben wir der KI zum Senden zur Verfügung gestellt:
 \begin{itemize}
 	\item ``BREAKPOINT [Zeile] [Datei]'' (setzen eines Breakpoints)
 	\item ``CONTINUE'' (Programm weiterlaufen lassen)
@@ -79,15 +79,15 @@ Außerdem kann die KI folgendes Kommando erhalten:
 
 Zum Testen dieser KI haben wir sie mit verschiedenen Bugs ausprobiert und jeweils beurteilt, wie hilfreich die Antwort der KI zum Beheben der Bugs war. Hierbei sind wir zum Schluss gekommen, dass die KI mit den gegebenen Kommandos in der Lage ist, erfolgreich Breakpoints zu setzen und anschließend Schrittweise durch ein Program durchzugehen, wodurch es einfache Bugs finden und beschreiben kann. Allerdings ist uns auch aufgefallen, dass die KI mit den gegebenen Kommandos noch Probleme hat komplexere Datenstrukturen im Code nachzuvollziehen.
 
-Aus unseren Ergebnissen schließen wir, dass KIs bereits heute in der Lage sind, den Debug Prozess zu übernehmen und zu steuern, auch wenn sie in unseren Tests noch nicht komplexe Bugs finden konnte. Aus diese Grund sehen wir allerdings in diesem Bereich auch noch viel Potenzial für weitere Entwicklung, um die KI besser als Debugger einsetzen zu können.
+Aus unseren Ergebnissen schließen wir, dass KIs bereits heute in der Lage sind, den Debug Prozess zu übernehmen und zu steuern, allerdings scheinen sie mit unserer Implementation noch nicht in der Lage zu sein, komplexere Bugs zu finden. Aus diese Grund sehen wir aber in diesem Bereich auch noch viel Potenzial für weitere Entwicklung, um die KI besser als Debugger einsetzen zu können.
 
 Der Code für unser Projekt ist öffentlich auf GitHub verfügbar: \url{https://github.com/Papierkorb2292/AI-Debugger}
 
 \section{Motivation und Fragestellung}
 
-Mit den letzten Fortschritten und dem öffentlichen Zugang zu KI, werden viele Möglichkeiten untersucht, wie eine KI beim Programmieren helfen kann. So gibt es beispielsweise schon länger die Möglichkeit Code Vorschläge von einer KI wie Tabnine oder Github Copilot zu erhalten und mit LLMs, wie ChatGPT, lässt sich auch ein ganzer Codeblock automatisch schreiben.
+Mit den letzten Fortschritten und dem öffentlichen Zugang zu KI, werden viele Möglichkeiten untersucht, wie eine KI Menschen helfen kann, und unter anderem beim Programmieren wurden bereits verschiedene hilfreiche Produkte entwickelt, die KI zum Unterstützen der Programmierenden verwenden. So gibt es beispielsweise schon länger die Möglichkeit Code Vorschläge von einer KI wie Tabnine oder Github Copilot zu erhalten und mit LLMs, wie ChatGPT, lässt sich auch ein ganzer Codeblock automatisch schreiben.
 
-Wir haben uns gefragt, ob KI Programmierenden auch beim Debuggen von geschriebenen Programmen helfen kann. Die KI ``Devin'' kann bereits selbst Programme schreiben und debuggen, benutzt allerdings zum debuggen \texttt{print} Statements, um den Zustand des Programms zu überwachen, indem dieser stellenweise in die Textausgabe geschrieben wird. Unser Ziel ist es jedoch die KI mit einem Debug Server, den auch Programmierende in ihrem Editor sonst benutzen, kommunizieren zu lassen. Ein weiterer Vorteil hiervon ist, dass es möglich wäre selbst zusammen mit der KI zu debuggen, indem man die KI nur Teile des Debuggen übernehmen lässt, und man den Rest noch selbst über den Editor vornimmt.
+Wir haben uns gefragt, ob KI Programmierenden auch beim Debuggen von bereits geschriebenen Programmen helfen kann. Die KI ``Devin'' kann bereits selbst Programme schreiben und debuggen, benutzt allerdings zum debuggen \texttt{print} Statements, um den Zustand des Programms zu überwachen, indem dieser stellenweise in die Textausgabe geschrieben wird. Unser Ziel ist es jedoch die KI mit einem Debug Server, den auch Programmierende in ihrem Editor häufig benutzen, kommunizieren zu lassen. Ein weiterer Vorteil hiervon ist, dass es möglich wäre selbst zusammen mit der KI zu debuggen, indem man die KI nur Teile des Debuggen übernehmen lässt, und man den Rest noch selbst über den Editor vornimmt.
 
 \section{Hintergrund und theoretische Grundlagen}
 
@@ -95,11 +95,13 @@ Wir haben uns gefragt, ob KI Programmierenden auch beim Debuggen von geschrieben
 
 Als KI (Künstliche Intelligenz) bezeichnet man häufig Verfahren zur Datenverarbeitung, für die keine genaue Handlungsanweisung festgelegt werden, sondern die mit Hilfe von Maschinellen Lernen erstellt wird, was einfach gesagt bedeutet, dass man die Parameter des Verfahrens stückweise ändert, um bei Eingangsdaten, für die schon Ausgangsdaten bekannt sind, die Ausgangsdaten des Verfahrens so nah wie möglich an die Erwarteten zu bekommen$^1$. Oft liegt der KI ein neuronales Netzwerk zugrunde, in welchem Eingangsdaten über mehrere Iterationen hinweg verschieden gewichtet und addiert werden können, um am Ende auf die Ausgangsdaten zu kommen.
 
-Als LLM (Large Language Model) bezeichnet man KIs, die Textdaten verarbeiten und auf solche trainiert sind$^3$. Ein bekanntes Beispiel ist ChatGPT: Eine KI, welcher der Benutzer Textanfragen schreiben, und die dann selbst eine Textantwort produziert. LLMs zeichnen sich zudem durch ihre Flexibilität aus, da sie viele verschiedene Aufgaben über Text erledigen können und die Möglichkeit haben vielen Fragen zu beantworten$^2$.
+Als LLM (Large Language Model) bezeichnet man KIs, die Textdaten verarbeiten und auf solche trainiert sind$^3$. Ein bekanntes Beispiel ist ChatGPT: Eine KI, welcher der Benutzer Textanfragen schreiben kann, und die dann selbst eine Textantwort produziert. LLMs zeichnen sich zudem durch ihre Flexibilität aus, da sie viele verschiedene Aufgaben über Text erledigen können und die Möglichkeit haben, viele Fragen zu beantworten$^2$.
 
 \subsection{Debugging}
 
 Beim Debuggen eines Programm mit einem Debugger, verbindet sich der Editor mit einem Debug Server, der das Programm ausführt und das Programm auch pausieren kann, damit der Editor den Zustand des Programms zu einem bestimmten Punkt anzeigen kann. Während das Programm pausiert ist, lässt sich außerdem mit dem Editor Schritt für Schritt durch das Programm durchgehen, um die Änderungen im Zustand des Programms zu beobachten.
+
+Ein Debugger wird von Programmierenden benutzt, um Fehler in einem Program zu finden, indem man schrittweise durch das Programm durchgeht und dabei dessen Zustand überwacht, sodass man den Ort im Programm findet, bei dem der Zustand des Programms nicht mehr dem erwarteten Zustand entspricht. Mit Hilfe der dabei gewonnenen Informationen lässt sich gezielter nach dem Fehler suchen. 
 
 \subsection{Debug Adapter}
 
@@ -113,7 +115,7 @@ Folgendes ist eine Veranschaulichung, wie der Debug Prozess also aufgebaut ist:
 
 \section{Vorgehensweise, Materialien und Methoden}
 
-Um zu testen, ob es möglich ist, eine KI auf diese Art und Weise beim Debuggen unterstützen zu lassen, werden wir selbst unsere Idee hierzu umsetzen, und verschiedene Ansätze, um mit der KI zu interagieren, auszuprobieren.
+Um zu testen, ob es möglich ist, eine KI auf diese Art und Weise beim Debuggen unterstützen zu lassen, werden wir selbst unsere Idee als VSCode Extension umsetzen, und verschiedene Ansätze, um mit der KI zu interagieren, ausprobieren.
 
 Um eine KI in den Debug Prozess zu interagieren, fügen wir zunächst eine Middleware zwischen Editor und Debug Adapter hinzu, durch welche alle Nachrichten zwischen dem Editor und Debug Adapter laufen, damit die KI diese beobachten und unterbrechen kann. Außerdem wird es hiermit möglich, Nachrichten, die durch die KI eingebracht werden, an den Editor und Debug Adapter zu senden. Dies macht es möglich für die KI, Kontrolle über den Debug Prozess zu nehmen.
 
@@ -133,13 +135,13 @@ Um zu verstehen, wie die Kommunikation zwischen dem Debug Adapter und dem KI-Deb
 
 Da DAP Nachrichten im JSON Format gesendet werden und dabei oft viele Informationen über den Zustand des Programms enthalten, bei denen wichtig ist, dass sie akkurat sind, wie Dateipfade, Breakpoint Ids, etc., haben wir uns dagegen entschieden, die KI direkt diese JSON Objekte lesen und auslesen zu lassen, da dann die KI viel mehr Wert darauf legen müsste, vollständig fehlerfreie JSON Objekte auszugeben, was die Qualität des eigentlichen Debuggens beinträchtigen könnte.
 
-Stattdessen kommuniziert die KI mit dem KI Debugger Dienst über simple Textnachrichten, von denen jede ein Kommando darstellt. So ein Kommando ist aufgebaut aus einem Kommando Namen und einer Liste von Argumenten, die das Kommando benötigt. Beispielsweise gibt es das Kommando ``BREAKPOINT [Zeile] [Datei]'', welches der KI erlaubt einen Breakpoint in einer bestimmten Datei und Zeile zu setzen, was bedeutet, dass das Programm pausiert, wenn es diese Zeile erreicht. Über die gleiche Art und Weise werden auch bestimmte Events der KI mitgeteilt, indem die KI beispielsweise das Kommando ``PAUSED [Zeile] [Spalte] [Datei]'' erhält, sobald das Programm pausiert.
+Stattdessen haben wir uns überlegt, die KI mit dem KI Debugger Dienst über simple Textnachrichten kommunizieren zu lassen, von denen jede ein Kommando darstellt. So ein Kommando ist aufgebaut aus einem Kommando Namen und einer Liste von Argumenten, die das Kommando benötigt. Beispielsweise haben wir das Kommando ``BREAKPOINT [Zeile] [Datei]'' erstellt, welches der KI erlaubt einen Breakpoint in einer bestimmten Datei und Zeile zu setzen, was bedeutet, dass das Programm pausiert, wenn es diese Zeile erreicht. Über die gleiche Art und Weise werden auch bestimmte Events der KI mitgeteilt, indem die KI beispielsweise das Kommando ``PAUSED [Zeile] [Spalte] [Datei]'' erhält, sobald das Programm pausiert.
 
 Alle der KI zur Verfügung stehenden Kommandos werden ihr in der ersten Nachricht mitgeteilt, zusammen mit ihrem Sinn als Debugger und dem zu behebenden Bug. Das Vermitteln der Kommandos geschieht hierbei durch festgelegte Sätze, diese Kommandos werden also in eine sprachliche Form gebracht, die die Kommunikation mit dem LLM ermöglicht. Beispielsweise entspricht das Kommando ``BREAKPOINT'' dem Satz: ``You can set breakpoints in the code by starting your message with "BREAKPOINT" followed by the line number and the file name.'' Dieses Prinzip wird auf jedes Kommando angewendet. Nun, da die Befehle für die KI vorliegen, werden diese übermittelt und die Antworten empfangen. Die jeweiligen Antworten sind so formatiert, dass sie ohne großen Aufwand weiterverarbeitet werden können.
 
-Da wir davon ausgehen, dass die KI nicht immer die Fragestellung ausreichend verstehen wird, haben wir ihr außerdem die Möglichkeit gegeben, Fehler auszugeben, indem sie das Kommando ``ERROR [Fehlermeldung]'' sendet. Dieses Kommando wird an den Editor weitergeleitet, sodass ein User die Fehlermeldung sehen kann und die Anfrage anpassen kann.
+Da wir davon ausgehen, dass die KI nicht immer die Fragestellung ausreichend verstehen wird (unter anderem, wenn der zu findende Bug nicht gut genug beschrieben wird), haben wir ihr außerdem die Möglichkeit gegeben, Fehler auszugeben, indem sie das Kommando ``ERROR [Fehlermeldung]'' sendet. Dieses Kommando wird an den Editor weitergeleitet, sodass ein User die Fehlermeldung sehen kann und die Anfrage anpassen kann.
 
-Wie bereits erwähnt ist es außerdem wichtig, dass die KI Zugriff auf den Code des Programs bekommt. Auch hierfür gibt es ein Kommando, welches eine Zeile aus einer Datei zu der KI senden kann, wenn die KI ``LINE [Zeile] [Datei]'' sendet. Hierbei meiden wir, eine gesamte Datei auf einmal an die KI zu senden, da dies darfür sorgen könnte, dass die KI sich nicht den genauen Inhalt der einzelnen Zeilen richtig merken kann. Außerdem würde, wenn man der KI eine ganze Datei senden würde, dies viele Tokens verbrauchen, was schlussendlich dafür sorgen würde, dass der Debug Prozess mehr Geld köste.
+Wie bereits erwähnt ist es außerdem wichtig, dass die KI Zugriff auf den Code des Programs bekommt. Auch hierfür gibt es ein Kommando, welches eine Zeile aus einer Datei zu der KI senden kann, wenn die KI ``LINE [Zeile] [Datei]'' sendet. Hierbei meiden wir, eine gesamte Datei auf einmal an die KI zu senden, da dies darfür sorgen könnte, dass die KI sich nicht den genauen Inhalt der einzelnen Zeilen richtig merken kann. Außerdem würde, wenn man der KI eine ganze Datei senden würde, dies viele Tokens verbrauchen, was schlussendlich dafür sorgen würde, dass der Debug Prozess mehr Geld köste (Siehe \autoref{sec:compression} \nameref{sec:compression}).
 
 \subsection{Einbinden der KI}
 
@@ -152,6 +154,7 @@ Ein zusätzliches wichtiges Kommando ist ``VARIABLE [Name]'', welches der KI erl
 Zuletzt hat die KI außerdem ein ``CAUSE [Beschreibung]'' Kommando, mit dem sie zum Abschluss den von ihr herausgefunden Grund ausgeben kann, warum der Bug aufgetreten ist.
 
 \subsection{Komprimierung der Konversation}
+\label{sec:compression}
 
 Ein weiterer wichtiger Aspekt ist die Komprimierung der übermittelten Daten. Dies ist aufgrund des Bezahlmodells von OpenAI wichtig, das nach dem Prinzip sogenannter 'Tokens' fungiert, für deren Anzahl man bezahlt$^7$. Dieser Prozess heißt Tokenisierung und funktioniert nach Folgender Reihenfolge:
 \begin{enumerate}
