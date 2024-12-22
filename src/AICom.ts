@@ -353,7 +353,8 @@ function createAIInstructionPrompt(userPrompt: PromptOptions) {
       ${getCmdExplanationsForContext(AICmdContext.PAUSED)}
 
       When you send such a message, do not include any explanation, just the command.
-      When you don't know the code at a certain line, use the "LINE" command to request it.
+      Request lines of codes as needed, at and around the pause location.
+      Make sure not to step over lines that throw errors.
 
       As a debugger, you will receive the message ${aiPauseNotification} when the code execution is paused, followed by the line number, column number and the file name.
       
