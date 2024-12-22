@@ -2,7 +2,6 @@ import axios, { AxiosInstance } from 'axios';
 import { openAIKey } from './Secrets';
 import * as vscode from 'vscode';
 import { ProtocolMessage, Response, SetBreakpointsArguments } from './DebuggerProtocol';
-
 export interface prompt {
   preCmd?: string;
   exceptionInfo?: string;
@@ -262,7 +261,7 @@ registerAICmd('STEPOUT', id => ({
 }));
 registerAICmd('VARIABLE', id => ({
   context: AICmdContext.PAUSED,
-  explanation: `you can read a variable value by starting your message with "${id}" followed by the variable name.`,
+  explanation: `you can read a variable value by starting your message with "${id}" followed by the variable name. You cannot request a variable before it has been defined.`,
   callback: async (params, aiDebuggerService) => {
     const variable_name = params.trim();
     /*const scopes = await aiDebuggerService.grabDebuggerReponse(
@@ -330,10 +329,10 @@ function createAIInstructionPrompt(userPrompt: PromptOptions) {
       ${getCmdExplanationsForContext(AICmdContext.NONE)}
       ${getCmdExplanationsForContext(AICmdContext.PAUSED)}
 
-      When you send such a message, do not include any explanation, just the command.
+      When you send such a message, do not include any explanation, just the command. You can only send one command at a time.
       When you don't know the code at a certain line, use the "LINE" command to request it.
 
-      As a debugger, you will receive the message ${aiPauseNotification} when the code execution is paused, followed by the line number, column number and the file name.
+      As a debugger, you will receive the message ${aiPauseNotification} when the code execution is paused, followed by the line number, column number and the file name of the code that will be executed next.
       
       The following bug is to be fixed: ${userPrompt.prompt.cmd}
 
@@ -399,7 +398,7 @@ export class AIDebuggerService {
     if(message.type === "event" && message.event === "stopped") {
       if(!this.hasStarted) {
         this.hasStarted = true;
-        console.log("INITIAL:", this.initialPrompt);
+        console.log("AI INITIAL:", this.initialPrompt);
         this.aiService.sendPrompt(createAIInstructionPrompt(this.initialPrompt))
           .then(response => this.handleAiResponse(response));
       }
@@ -427,14 +426,14 @@ export class AIDebuggerService {
   }
 
   handleAiResponse(response: string) {
-    console.log("RESPONSE:", response);
+    console.log("AI RESPONSE:", response);
     const cmdEnd = response.indexOf(' ');
     const cmd = cmdEnd === -1 ? response : response.slice(0, cmdEnd);
     const params = cmdEnd === -1 ? '' : response.slice(cmdEnd + 1);
     const aiCmd = aiCmdRegistry.get(cmd.toUpperCase());
     if(aiCmd) {
       aiCmd.callback(params, this).then(response => {
-        console.log("PROMPT:", response);
+        console.log("AI PROMPT:", response);
         this.aiService.sendPrompt(copyPromptOptionsForPrompt(this.initialPrompt, { cmd: response }))
           .then(response => this.handleAiResponse(response));
       });

@@ -9,7 +9,7 @@
             "request": "launch",
             "name": "AI: Python Debugger: Current File",
             "delegate": "Python Debugger: Current File",
-            "prompt": "The test in line 124 in file 'C:\\Users\\micro\\Desktop\\Programmieren\\ai-debugger\\testWorkspace\\test.py' is failing, because `is_balanced` doesn't return the correct result"
+            "prompt": "The test in line 23 in file 'C:\\Users\\micro\\Desktop\\Programmieren\\ai-debugger\\testWorkspace\\show.py' is failing, because `get_parenthese_ranges` doesn't return the correct result."
         },
 
         {
