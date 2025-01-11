@@ -138,6 +138,7 @@ export function registerAICmd(id: string, cmd: (id: string) => AICmd) {
 }
 
 function getAbsoluteFilePath(file: string) {
+  console.log("Searching file:", file)
   return vscode.workspace.findFiles(file).then(files => files[0].fsPath);
 }
 
@@ -205,7 +206,8 @@ registerAICmd('LINE', id => ({
   explanation: `you can retrieve a line of code by starting your message with "${id}" followed by the line number and the file url.`,
   callback: async (params, aiDebuggerService) => {
     const [lineNumber, url] = params.trim().split(" ");
-    const fileContent = await aiDebuggerService.fileGetter(`file:///${await getAbsoluteFilePath(url)}`);
+    const filePath = await getAbsoluteFilePath(url);
+    const fileContent = await aiDebuggerService.fileGetter(filePath.startsWith("/") ? `file://${filePath}` : `file:///${filePath}`);
     const lineContent = fileContent.split("\n")[parseInt(lineNumber) - 1];
     return `The line contains: ${lineContent}`;
   }
@@ -291,25 +293,25 @@ registerAICmd('EVAL', id => ({
         arguments: { expression: variable_name, frameId: aiDebuggerService.topFrameId!! }
       })
     );
-    const children = await aiDebuggerService.grabDebuggerReponse(
+    const children = evaluation.body.variablesReference == 0 ? [] : (await aiDebuggerService.grabDebuggerReponse(
       await aiDebuggerService.sendToDebugger!({
         type: "request",
         command: "variables",
         seq: -1,
         arguments: { variablesReference: evaluation.body.variablesReference }
       })
-    );
+    )).body.variables;
     let childrenString = "";
-    if(children.body.variables.length === 0) {
+    if(children.length === 0) {
       childrenString = `This value has no children`;
-    } else if(children.body.variables.some((variable: any) => variable.name === "0")) {
-      const highestIndex = children.body.variables.reduce((maxIndex: number, variable: any) => {
+    } else if(children.some((variable: any) => variable.name === "0")) {
+      const highestIndex = children.reduce((maxIndex: number, variable: any) => {
         const index = parseInt(variable.name);
         return isNaN(index) ? maxIndex : Math.max(maxIndex, index);
       });
       childrenString = `This value is indexable from 0 to ${highestIndex}`;
     } else{
-      childrenString = `This value has the following properties: ${children.body.variables.map((variable: any) => variable.name).join(", ")}`;
+      childrenString = `This value has the following properties: ${children.map((variable: any) => variable.name).join(", ")}`;
     }
     return `The value of ${variable_name} is: ${evaluation.body.result}. ${childrenString}`;
   }
@@ -351,12 +353,14 @@ function createAIInstructionPrompt(userPrompt: PromptOptions) {
       ${getCmdExplanationsForContext(AICmdContext.NONE)}
       ${getCmdExplanationsForContext(AICmdContext.PAUSED)}
 
-      When you send such a message, do not include any explanation, just the command.
-      Always request lines of codes at and around the pause location using the "LINE" command.
+      Your responses only contain commands, but no other text.
+      Always request lines of codes at and before and after the pause location using the "LINE" command to learn about the purpose of each line instead of making assumptions about what the line is for.
+      Be aware that lines before or after the current line might be part of different scopes.
       Make sure not to step over lines that throw errors.
 
       As a debugger, you will receive the message ${aiPauseNotification} when the code execution is paused, followed by the line number, column number and the file name of the code that will be executed next.
       
+      Go through the code step by step and step into functions to determine the cause of the bug. Read the values of variables to predict what the program should do next.
       The following bug is to be fixed: ${userPrompt.prompt.cmd}
 
       Start with debugging the code by setting breakpoints. Afterwards, you can start code execution with the message "CONTINUE".

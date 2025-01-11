@@ -10,7 +10,9 @@ import { DummyDebugAdapter } from './DummyDebugAdapter';
 import { AIDebuggerService, ChatGPTClient, ManualNIService } from './AICom';
 import { File } from 'buffer';
 const net = require('net');
-const cp = require('child_process');
+//const cp = require('child_process');
+import * as cp from 'child_process';
+const diagnostics_channel = require("diagnostics_channel")
 
 function readSourceFile(url: string): Thenable<string> {
 	return vscode.workspace.fs.readFile(vscode.Uri.parse(url)).then(buffer => buffer.toString())
@@ -44,6 +46,10 @@ export function activate(context: vscode.ExtensionContext) {
 // This method is called when your extension is deactivated
 export function deactivate() {}
 
+type Mutable<T> = {
+	-readonly [K in keyof T]: T[K] 
+}
+
 function injectDebuggerMiddleware(aiDebuggerService: AIDebuggerService): { dispose(): void } {
 	const createConnection = net.createConnection;
 	net.createConnection = function(...args: any[]) {
@@ -56,31 +62,17 @@ function injectDebuggerMiddleware(aiDebuggerService: AIDebuggerService): { dispo
 		Object.assign(connection, wrapped.stdin, wrapped.stdout);
 		return connection;
 	};
-
-	const spawn = cp.spawn;
-	cp.spawn = function(...args: any[]) {
+	const childProcessSpawn = (cp.ChildProcess.prototype as any).spawn;
+	(cp.ChildProcess.prototype as any).spawn = function(...args: any[]) {
 		console.log("spawn");
-		const child: ChildProcess = spawn.apply(this, args);
+		const res: any = childProcessSpawn.apply(this, args);
 		const wrapped = wrapDebugAdapterStreams({
-			stdin: child.stdin!,
-			stdout: child.stdout!
+			stdin: this.stdin!,
+			stdout: this.stdout!
 		}, aiDebuggerService);
-		Object.assign(child, wrapped);
-		return child;
+		Object.assign(this, wrapped);
+		return res;
 	};
-
-	const fork = cp.fork;
-	cp.fork = function(...args: any[]) {
-		console.log("fork");
-		const child: ChildProcess = fork.apply(this, args);
-		const wrapped = wrapDebugAdapterStreams({
-			stdin: child.stdin!,
-			stdout: child.stdout!
-		}, aiDebuggerService);
-		Object.assign(child, wrapped);
-		return child;
-	};
-	
 	const inlineImplementationConstructor = DebugAdapterInlineImplementation.prototype.constructor;
 	DebugAdapterInlineImplementation.prototype.constructor = function(debugAdapter: vscode.DebugAdapter) {
 		console.log("DebugAdapterInlineImplementation");
@@ -90,8 +82,8 @@ function injectDebuggerMiddleware(aiDebuggerService: AIDebuggerService): { dispo
 	return {
 		dispose(): void {
 			net.createConnection = createConnection;
-			cp.spawn = spawn;
-			cp.fork = fork;
+			(cp.ChildProcess.prototype as any).spawn = childProcessSpawn;
+			DebugAdapterInlineImplementation.prototype.constructor = inlineImplementationConstructor;
 		}
 	};
 }
