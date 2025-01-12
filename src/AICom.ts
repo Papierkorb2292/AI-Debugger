@@ -64,10 +64,19 @@ export class ChatGPTClient implements AIService {
       });
 
       try {
-          const response = await apiClient.post('', {
-              model: 'gpt-4o',
-              messages: this.conversationHistory,
-              temperature: 0.1
+          const inputData = {
+            model: 'gpt-4o',
+            messages: this.conversationHistory,
+            temperature: 0
+          }
+          const response = await apiClient.post('', inputData).catch(async (err) => {
+            if(err.response && err.response.status === 429) {
+              console.log("WARN: Hit OpenAI request limit, waiting 60s...")
+              await new Promise(r => setTimeout(r, 60*1000));
+              return apiClient.post('', inputData);
+            } else {
+              throw err;
+            }
           });
 
           const data = response.data;
@@ -137,9 +146,8 @@ export function registerAICmd(id: string, cmd: (id: string) => AICmd) {
   aiCmdRegistry.set(id, cmd(id));
 }
 
-function getAbsoluteFilePath(file: string) {
-  console.log("Searching file:", file)
-  return vscode.workspace.findFiles(file).then(files => files[0].fsPath);
+function getAbsoluteFilePath(file: string): Thenable<string | undefined> {
+  return vscode.workspace.findFiles(file).then(files => files[0]?.fsPath);
 }
 
 function getRelativeFilePath(file: string) {
@@ -173,6 +181,9 @@ registerAICmd('BREAKPOINT', id => ({
     const [lineParam, fileParam] = params.trim().split(" ");
     const line = parseInt(lineParam.trim());
     const file = await getAbsoluteFilePath(fileParam.trim());
+    if(!file) {
+      return "There exists no such file. ";
+    }
     let args = aiDebuggerService.existingBreakpoints.get(file);
     if(!args) {
       args = { source: { path: file } };
@@ -198,15 +209,18 @@ registerAICmd('BREAKPOINT', id => ({
         breakpoint: newBreakpoint
       }
     });
-    return `The breakpoint has been set. ` + aiNextCmdInstruction;
+    return `The breakpoint has been set. `;
   }
 }));
 registerAICmd('LINE', id => ({
   context: AICmdContext.NONE,
-  explanation: `you can retrieve a line of code by starting your message with "${id}" followed by the line number and the file url.`,
+  explanation: `you can retrieve a line of code by starting your message with "${id}" followed by the line number and the file url. Only use file paths known to you.`,
   callback: async (params, aiDebuggerService) => {
     const [lineNumber, url] = params.trim().split(" ");
     const filePath = await getAbsoluteFilePath(url);
+    if(!filePath) {
+      return "There is no such file.";
+    }
     const fileContent = await aiDebuggerService.fileGetter(filePath.startsWith("/") ? `file://${filePath}` : `file:///${filePath}`);
     const lineContent = fileContent.split("\n")[parseInt(lineNumber) - 1];
     return `The line contains: ${lineContent}`;
@@ -214,7 +228,7 @@ registerAICmd('LINE', id => ({
 }));
 registerAICmd('CONTINUE', id => ({
   context: AICmdContext.PAUSED,
-  explanation: `you can continue the execution with the message "${id}".`,
+  explanation: `you can continue the execution with the message "${id}". Only do this if you know a breakpoint will be hit.`,
   callback: async (_params, aiDebuggerService) => {
     const promise = aiDebuggerService.schedulePauseAINotification();
     aiDebuggerService.grabDebuggerReponse(
@@ -282,7 +296,7 @@ registerAICmd('STEPOUT', id => ({
 }));
 registerAICmd('EVAL', id => ({
   context: AICmdContext.PAUSED,
-  explanation: `you can evaluate an expression by starting your message with "${id}" followed by the expression.`,
+  explanation: `you can evaluate an expression by starting your message with "${id}" followed by the expression. Use this to keep track of variables after they have been assigned.`,
   callback: async (params, aiDebuggerService) => {
     const variable_name = params.trim();
     const evaluation = await aiDebuggerService.grabDebuggerReponse(
@@ -308,7 +322,7 @@ registerAICmd('EVAL', id => ({
       const highestIndex = children.reduce((maxIndex: number, variable: any) => {
         const index = parseInt(variable.name);
         return isNaN(index) ? maxIndex : Math.max(maxIndex, index);
-      });
+      }, 0);
       childrenString = `This value is indexable from 0 to ${highestIndex}`;
     } else{
       childrenString = `This value has the following properties: ${children.map((variable: any) => variable.name).join(", ")}`;
@@ -353,17 +367,19 @@ function createAIInstructionPrompt(userPrompt: PromptOptions) {
       ${getCmdExplanationsForContext(AICmdContext.NONE)}
       ${getCmdExplanationsForContext(AICmdContext.PAUSED)}
 
-      Your responses only contain commands, but no other text.
-      Always request lines of codes at and before and after the pause location using the "LINE" command to learn about the purpose of each line instead of making assumptions about what the line is for.
+      Your responses only contain exactly one command, but no other text.
+      Always request lines of code at and immediately before and immediately after the pause location using the LINE command.
       Be aware that lines before or after the current line might be part of different scopes.
+      A line is only executed once you step over it. Variables are undefined when paused at their assignment, step over the assignment to read their value.
       Make sure not to step over lines that throw errors.
 
       As a debugger, you will receive the message ${aiPauseNotification} when the code execution is paused, followed by the line number, column number and the file name of the code that will be executed next.
       
-      Go through the code step by step and step into functions to determine the cause of the bug. Read the values of variables to predict what the program should do next.
+      Go through the code step by step and step into functions to determine the cause of the bug. Read the values of variables and function parameters.
       The following bug is to be fixed: ${userPrompt.prompt.cmd}
 
       Start with debugging the code by setting breakpoints. Afterwards, you can start code execution with the message "CONTINUE".
+      Set breakpoints to skip over irrelevant loops. Use the LINE command to get the next dew lines to determine the line number for this breakpoint.
       ${getCmdExplanationsForContext(AICmdContext.CAUSE_FOUND)}
       ${getCmdExplanationsForContext(AICmdContext.SETUP)}
     `,
