@@ -4,7 +4,7 @@ This is being developed as a JugendForscht project. The corresponding documentat
 
 ## Introduction
 
-Existing coding AIs, like Devin, are able to debug code by adding print statements to it. In cotrast, the idea of this project is letting an AI control an actual VSCode debug process through means of the debug adapter protocol. To do this, the AI needs a bug description from the user and can then, after having stepped through the code, report its findings back to the user.
+Existing coding AIs, like Devin, are able to debug code by adding print statements to it. In contrast, the idea of this project is letting an AI control an actual VSCode debug process through means of the debug adapter protocol. To do this, the AI needs a bug description from the user and can then, after having stepped through the code, report its findings back to the user.
 
 Note that that, at the moment, the AI doesn't seem to be able to solve more complex bugs, especially when data structures are involved, to which the AI doesn't have a good access. Examples of bugs the AI was and wasn't able to solve, can be found in `testWorkspace/test.py`.
 
