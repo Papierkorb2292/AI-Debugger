@@ -80,7 +80,7 @@ export class ChatGPTClient implements AIService {
           });
 
           const data = response.data;
-
+          console.log("API USAGE:", data.usage)
           if (data.choices && data.choices.length > 0) {
               const reply = data.choices[0].message.content;
               // Add the assistants reply to the conversation history
