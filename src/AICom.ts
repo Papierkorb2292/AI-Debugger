@@ -84,14 +84,8 @@ export class ChatGPTClient implements AIService {
           if (data.choices && data.choices.length > 0) {
               const reply = data.choices[0].message.content;
               // Add the assistants reply to the conversation history
-              let saveRole: string = "";
-              if (prompt.prompt.role === "user"){
-                saveRole = "assistant";
-              }else{
-                saveRole = "system";
-              }
               this.conversationHistory.push({
-                  role: saveRole,
+                  role: "assistant",
                   content: reply,
               });
               return reply.trim();
@@ -279,7 +273,7 @@ registerAICmd('STEPINTO', id => ({
 }));
 registerAICmd('STEPOUT', id => ({
   context: AICmdContext.PAUSED,
-  explanation: `you can step out of a function call with the message "${id}".`,
+  explanation: `you can step out of a function call with the message "${id}". This will only pause after the method you are in is done. Stepping out when you are not in a method call will stop the entire program, so only step out when you are sure you are in a method.`,
   callback: async (_params, aiDebuggerService) => {
     const promise = aiDebuggerService.schedulePauseAINotification();
     aiDebuggerService.grabDebuggerReponse(
@@ -367,19 +361,21 @@ function createAIInstructionPrompt(userPrompt: PromptOptions) {
       ${getCmdExplanationsForContext(AICmdContext.NONE)}
       ${getCmdExplanationsForContext(AICmdContext.PAUSED)}
 
-      Your responses only contain exactly one command, but no other text.
-      Always request lines of code at and immediately before and immediately after the pause location using the LINE command.
+      You generate only exactly one command at a time without any explanation.
+
+      As a debugger, you will receive the message ${aiPauseNotification} when the code execution is paused, followed by the line number, column number and the file name of the code that will be executed next.
+
+      Always request lines of code immediately before, immediately after and directly at the pause location using the LINE command.
       Be aware that lines before or after the current line might be part of different scopes.
       A line is only executed once you step over it. Variables are undefined when paused at their assignment, step over the assignment to read their value.
       Make sure not to step over lines that throw errors.
-
-      As a debugger, you will receive the message ${aiPauseNotification} when the code execution is paused, followed by the line number, column number and the file name of the code that will be executed next.
       
       Go through the code step by step and step into functions to determine the cause of the bug. Read the values of variables and function parameters.
       The following bug is to be fixed: ${userPrompt.prompt.cmd}
 
       Start with debugging the code by setting breakpoints. Afterwards, you can start code execution with the message "CONTINUE".
       Set breakpoints to skip over irrelevant loops. Use the LINE command to get the next dew lines to determine the line number for this breakpoint.
+      Stepout will step out of entire methods, not only step out of the loop, so breakpoints must be used to skip only loops.
       ${getCmdExplanationsForContext(AICmdContext.CAUSE_FOUND)}
       ${getCmdExplanationsForContext(AICmdContext.SETUP)}
     `,
@@ -401,6 +397,7 @@ export class AIDebuggerService {
   private hasEnteredPauseForNotification = false;
 
   private debuggerResponsesCallback = new Map<number, (response: Response) => void>();
+  private lastPauseLine?: number;
 
   constructor(
     public aiService: AIService,
@@ -451,8 +448,19 @@ export class AIDebuggerService {
       this.hasEnteredPauseForNotification = false;
       const frame = message.body.stackFrames[0];
       this.topFrameId = frame.id;
-      if(this.scheduledPauseAINotificationCallback) {
-        this.scheduledPauseAINotificationCallback(createPauseNotification(frame.line, frame.column, frame.source.path));
+      if(this.lastPauseLine !== frame.line) {
+        this.lastPauseLine = frame.line
+        if(this.scheduledPauseAINotificationCallback) {
+          this.scheduledPauseAINotificationCallback(createPauseNotification(frame.line, frame.column, frame.source.path));
+        }
+      } else {
+        // The AI expects to skip an entire line, so we step until the next line is reached
+        this.sendToDebugger!({
+          type: "request",
+          command: "next",
+          seq: -1,
+          arguments: { threadId: this.stoppedThread }
+        })
       }
     }
     return true;
