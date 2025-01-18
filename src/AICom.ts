@@ -365,7 +365,7 @@ function createAIInstructionPrompt(userPrompt: PromptOptions) {
 
       As a debugger, you will receive the message ${aiPauseNotification} when the code execution is paused, followed by the line number, column number and the file name of the code that will be executed next.
 
-      Always request lines of code immediately before, immediately after and directly at the pause location using the LINE command.
+      Always request lines of code immediately before, immediately after and directly at the pause location using the LINE command. Keep requested line to a minimum.
       Be aware that lines before or after the current line might be part of different scopes.
       A line is only executed once you step over it. Variables are undefined when paused at their assignment, step over the assignment to read their value.
       Make sure not to step over lines that throw errors.
@@ -374,6 +374,7 @@ function createAIInstructionPrompt(userPrompt: PromptOptions) {
       The following bug is to be fixed: ${userPrompt.prompt.cmd}
 
       Start with debugging the code by setting breakpoints. Afterwards, you can start code execution with the message "CONTINUE".
+      Afterwards, start stepping through the code using STEP, STEPINTO and STEPOUT.
       Set breakpoints to skip over irrelevant loops. Use the LINE command to get the next dew lines to determine the line number for this breakpoint.
       Stepout will step out of entire methods, not only step out of the loop, so breakpoints must be used to skip only loops.
       ${getCmdExplanationsForContext(AICmdContext.CAUSE_FOUND)}
