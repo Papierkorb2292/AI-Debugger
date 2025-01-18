@@ -7,11 +7,12 @@ import { PassThrough }from 'stream';
 import { DebugAdapterInlineImplementation } from 'vscode';
 import { wrapDebugAdapter, wrapDebugAdapterStreams } from './DebuggerMiddleware';
 import { DummyDebugAdapter } from './DummyDebugAdapter';
-import { AIDebuggerService, ChatGPTClient, ManualNIService } from './AICom';
+import { aiCmdRegistry, AIDebuggerService, ChatGPTClient, ManualNIService } from './AICom';
 import { File } from 'buffer';
 const net = require('net');
 //const cp = require('child_process');
 import * as cp from 'child_process';
+import { AITerminal } from './AITerminal';
 const diagnostics_channel = require("diagnostics_channel")
 
 function readSourceFile(url: string): Thenable<string> {
@@ -21,9 +22,14 @@ function readSourceFile(url: string): Thenable<string> {
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
+	let currentAIDebuggerService: AIDebuggerService | undefined;
 	context.subscriptions.push(vscode.debug.registerDebugAdapterDescriptorFactory('ai-debugger', {
 		createDebugAdapterDescriptor: function (session: vscode.DebugSession, executable: vscode.DebugAdapterExecutable | undefined): vscode.ProviderResult<vscode.DebugAdapterDescriptor> {
+			currentAIDebuggerService?.dispose()
+			currentAIDebuggerService = undefined;
+
 			console.log("Starting AI Debugger...");
+
 			const delegate = session.configuration.delegate;
 			const prompt = session.configuration.prompt as string;
 			const aiDebuggerService = new AIDebuggerService(
@@ -34,6 +40,7 @@ export function activate(context: vscode.ExtensionContext) {
 					prompt: { cmd: prompt }
 				}
 			);
+			currentAIDebuggerService = aiDebuggerService;
 			const dummyAdapter = new DummyDebugAdapter();
 			const dummyInlineImplementation = new vscode.DebugAdapterInlineImplementation(dummyAdapter);
 			dummyAdapter.disposable = injectDebuggerMiddleware(aiDebuggerService);
@@ -41,6 +48,12 @@ export function activate(context: vscode.ExtensionContext) {
 			return dummyInlineImplementation;
 		}
 	}));
+	context.subscriptions.push(vscode.debug.onDidTerminateDebugSession(() => currentAIDebuggerService?.exit()))
+	context.subscriptions.push({
+		dispose() {
+			currentAIDebuggerService?.dispose();
+		}
+	});
 }
 
 // This method is called when your extension is deactivated

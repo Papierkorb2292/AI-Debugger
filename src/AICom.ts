@@ -2,6 +2,7 @@ import axios, { AxiosInstance } from 'axios';
 import { openAIKey } from './Secrets';
 import * as vscode from 'vscode';
 import { ProtocolMessage, Response, SetBreakpointsArguments } from './DebuggerProtocol';
+import { AITerminal, AITerminalMessage } from './AITerminal';
 export interface prompt {
   role?: string;
   cmd: string;
@@ -22,7 +23,7 @@ function copyPromptOptionsForPrompt(prompt: PromptOptions, newPrompt: prompt): P
 }
 
 export interface AIService {
-    sendPrompt(prompt: PromptOptions): Promise<string>;
+    sendPrompt(prompt: PromptOptions, terminalMessageCallback: (msg: AITerminalMessage) => void): Promise<string>;
 }
 
 const apiClient = axios.create({
@@ -55,7 +56,7 @@ export class ChatGPTClient implements AIService {
     });
   }
   
-  async sendPrompt(prompt: PromptOptions): Promise<string> {
+  async sendPrompt(prompt: PromptOptions, terminalMessageCallback: (msg: AITerminalMessage) => void): Promise<string> {
         try {
         // Add the new prompt to the conversation history
         this.conversationHistory.push({
@@ -71,6 +72,7 @@ export class ChatGPTClient implements AIService {
           }
           const response = await apiClient.post('', inputData).catch(async (err) => {
             if(err.response && err.response.status === 429) {
+              terminalMessageCallback({ role: "info", content: "Hit OpenAI request limit, waiting 60s..."})
               console.log("WARN: Hit OpenAI request limit, waiting 60s...")
               await new Promise(r => setTimeout(r, 60*1000));
               return apiClient.post('', inputData);
@@ -78,9 +80,9 @@ export class ChatGPTClient implements AIService {
               throw err;
             }
           });
-
           const data = response.data;
           console.log("API USAGE:", data.usage)
+          terminalMessageCallback({ role: "info", content: `Token amount: ${data.usage.total_tokens}`})
           if (data.choices && data.choices.length > 0) {
               const reply = data.choices[0].message.content;
               // Add the assistants reply to the conversation history
@@ -165,7 +167,7 @@ export const aiNextCmdInstruction = `Proceed with your next action`;
 export const aiPauseNotification = `PAUSED`;
 
 export function createPauseNotification(line: number, column: number, file: string) {
-  return `${aiPauseNotification} line=${line} column=${column} file=${getRelativeFilePath(file)}`;
+  return `${aiPauseNotification} on line ${line} in file=${getRelativeFilePath(file)}`;
 }
 
 registerAICmd('BREAKPOINT', id => ({
@@ -328,7 +330,6 @@ registerAICmd('ERROR', id => ({
   context: AICmdContext.SETUP,
   explanation: `if you are unable to debug the code, you can report an error by starting your message with "${id}" followed by a description of the problem.`,
   callback: async (params, aiDebuggerService) => {
-    aiDebuggerService.hasErrored = true;
     vscode.window.showErrorMessage(`AI ERROR: ${params}`);
     console.log("AI ERROR:", params);
     return new Promise(() => { });
@@ -351,9 +352,17 @@ function getCmdExplanationsForContext(context: AICmdContext) {
     .join("\n");
 }
 
+function removeLeadingSpaces(input: string): string {
+  let lines = input.split("\n")
+  for(let i = 0; i < lines.length; i++) {
+    lines[i] = lines[i].trimStart()
+  }
+  return lines.join("\n")
+}
+
 function createAIInstructionPrompt(userPrompt: PromptOptions) {
   return copyPromptOptionsForPrompt(userPrompt, {
-    cmd: `
+    cmd: removeLeadingSpaces(`
       You are a debugger. Your task is to debug a problem in running code.
 
       As a debugger, you are able to do the following things:
@@ -363,7 +372,7 @@ function createAIInstructionPrompt(userPrompt: PromptOptions) {
 
       You generate only exactly one command at a time without any explanation.
 
-      As a debugger, you will receive the message ${aiPauseNotification} when the code execution is paused, followed by the line number, column number and the file name of the code that will be executed next.
+      As a debugger, you will receive the message ${aiPauseNotification} when the code execution is paused, followed by the line number and the file name of the code that will be executed next.
 
       Always request lines of code immediately before, immediately after and directly at the pause location using the LINE command. Keep requested line to a minimum.
       Be aware that lines before or after the current line might be part of different scopes.
@@ -379,13 +388,12 @@ function createAIInstructionPrompt(userPrompt: PromptOptions) {
       Stepout will step out of entire methods, not only step out of the loop, so breakpoints must be used to skip only loops.
       ${getCmdExplanationsForContext(AICmdContext.CAUSE_FOUND)}
       ${getCmdExplanationsForContext(AICmdContext.SETUP)}
-    `,
+    `),
     role: "system"
   });
 }
 
-export class AIDebuggerService {
-  public hasErrored = false;
+export class AIDebuggerService implements vscode.Disposable {
   public stoppedThread?: number;
   public sendToEditor?: (message: ProtocolMessage) => Promise<number>;
   public sendToDebugger?: (message: ProtocolMessage) => Promise<number>;
@@ -400,11 +408,49 @@ export class AIDebuggerService {
   private debuggerResponsesCallback = new Map<number, (response: Response) => void>();
   private lastPauseLine?: number;
 
+  private pausedRunStepPromise?: Promise<void>
+  
+  private terminalAddMessageEventEmitter = new vscode.EventEmitter<AITerminalMessage>()
+  private readonly aiTerminal: AITerminal;
+  private readonly addTerminalMessage: (msg: AITerminalMessage) => void = msg => this.terminalAddMessageEventEmitter.fire(msg)
+
+  private shouldExit = false;
+
   constructor(
     public aiService: AIService,
     public fileGetter: (url: string) => Thenable<string>,
     private initialPrompt: PromptOptions
-  ) { }
+  ) {
+    const _this = this;
+    this.aiTerminal = new AITerminal({
+      addMessageEvent: this.terminalAddMessageEventEmitter.event,
+      onClose() {
+        _this.shouldExit = true
+      },
+      onPause() {
+        const callback = {
+          resolve: () => {},
+          createNewPausePromise() {
+            _this.pausedRunStepPromise = new Promise<void>(resolve => {
+              callback.resolve = resolve
+            })
+          },
+
+          onStep() {
+            const previousResolve = this.resolve;
+            this.createNewPausePromise()
+            previousResolve()
+          },
+          onContinue() {
+            _this.pausedRunStepPromise = undefined;
+            this.resolve()
+          }
+        }
+        callback.createNewPausePromise()
+        return callback;
+      }
+    });
+  }
 
   setMessageSenders(sendToEditor: (message: ProtocolMessage) => Promise<number>, sendToDebugger: (message: ProtocolMessage) => Promise<number>) {
     this.sendToEditor = sendToEditor;
@@ -439,8 +485,11 @@ export class AIDebuggerService {
     if(message.type === "event" && message.event === "stopped") {
       if(!this.hasStarted) {
         this.hasStarted = true;
-        console.log("AI INITIAL:", this.initialPrompt);
-        this.aiService.sendPrompt(createAIInstructionPrompt(this.initialPrompt))
+        this.aiTerminal.focus();
+        const instructionPrompt = createAIInstructionPrompt(this.initialPrompt)
+        console.log("AI INSTRUCTION:", instructionPrompt);
+        this.addTerminalMessage({role: "system", content: instructionPrompt.prompt.cmd})
+        this.aiService.sendPrompt(createAIInstructionPrompt(this.initialPrompt), this.addTerminalMessage)
           .then(response => this.handleAiResponse(response));
       }
       this.hasEnteredPauseForNotification = true;
@@ -479,6 +528,7 @@ export class AIDebuggerService {
 
   handleAiResponse(response: string) {
     console.log("AI RESPONSE:", response);
+    this.addTerminalMessage({role: "assistent", content: response})
     const cmdEnd = response.indexOf(' ');
     const cmd = cmdEnd === -1 ? response : response.slice(0, cmdEnd);
     const params = cmdEnd === -1 ? '' : response.slice(cmdEnd + 1);
@@ -486,13 +536,32 @@ export class AIDebuggerService {
     if(aiCmd) {
       aiCmd.callback(params, this).then(response => {
         console.log("AI PROMPT:", response);
-        this.aiService.sendPrompt(copyPromptOptionsForPrompt(this.initialPrompt, { cmd: response }))
+        if(this.shouldExit) {
+          console.log("AI EXITED");
+          return;
+        }
+        this.addTerminalMessage({role: "user", content: response})
+        const sendPrompt = () => this.aiService.sendPrompt(copyPromptOptionsForPrompt(this.initialPrompt, { cmd: response }), this.addTerminalMessage)
           .then(response => this.handleAiResponse(response));
+        if(this.pausedRunStepPromise) {
+          this.pausedRunStepPromise.then(sendPrompt)
+        } else {
+          sendPrompt()
+        }
       });
       return;
     }
     console.error("AI SEND UNKNOWN COMMAND");
-    this.aiService.sendPrompt(copyPromptOptionsForPrompt(this.initialPrompt, { cmd: `Your messages contains an unknown command. As a debugger, you are only able to do the aforementioned actions. ` + aiNextCmdInstruction }))
+    this.aiService.sendPrompt(copyPromptOptionsForPrompt(this.initialPrompt, { cmd: `Your messages contains an unknown command. As a debugger, you are only able to do the aforementioned actions. ` + aiNextCmdInstruction }), this.addTerminalMessage)
       .then(response => this.handleAiResponse(response));
+  }
+
+  dispose() {
+    this.aiTerminal.dispose()
+    this.exit()
+  }
+
+  exit() {
+    this.shouldExit = true;
   }
 }
