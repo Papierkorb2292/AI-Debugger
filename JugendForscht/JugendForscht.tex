@@ -3,7 +3,7 @@
 \usepackage{mathptmx}
 \usepackage[T1]{fontenc}
 \usepackage[utf8x]{inputenc}
-\usepackage[a4paper,lmargin=2.5cm,rmargin=2.5cm,tmargin=2.0cm,bmargin=2.0cm,footskip=0.5cm]{geometry}
+\usepackage[a4paper,lmargin=2.5cm,rmargin=2.5cm,tmargin=2.0cm,bmargin=3.5cm,footskip=1.5cm]{geometry}
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{graphicx}
@@ -128,7 +128,7 @@ Der wichtigste Teil ist allerdings, wie die KI mit ihren Nachrichten mit dem Ben
 Folgendes Diagramm veranschaulicht den nun erweiterten Aufbau des Debuggers zusammen mit der Kommunikation mit der KI.
 
 \begin{center}	
-	\includegraphics[width=0.5\textwidth]{ai_integration}
+	\includegraphics[width=0.875\textwidth]{ai_integration}
 \end{center}
 
 Um zu verstehen, wie die Kommunikation zwischen dem Debug Adapter und dem KI-Debugger-Dienst funktioniert, betrachten wir erstmal genauer, wie der KI-Debugger-Dienst die verschiedenen Nachrichten verarbeitet:
@@ -170,39 +170,27 @@ Unser Ziel ist also so viel sogenannte 'one-word-tokens' zu verwenden wie mögli
 
 \subsection{Erheben von Daten}
 
-Da nun die KI in den Debug Prozess integriert wurde, ist der nächste Schritt die Fähigkeiten der KI auszutesten, um herauszufinden, ob sie tatsächlich in der Lage ist, ein Programm erfolgreich zu debuggen. Hierfür haben wir uns entschieden, die KI auf verschiedene Probleme zu testen, die wir selbst in Programmen eingebaut haben, und die KI dabei zu beobachten, wie sie diese Probleme löst.
+Da nun die KI in den Debug Prozess integriert wurde, ist der nächste Schritt die Erfolgsrate der KI beim Debuggen herauszufinden. Hierfür benötigen wir Beispielprobleme, mit denen wir die KI testen können. Außerdem haben wir vor, die Schwierigkeit eines Problems bewerten zu können, sodass wir die Erolgsrate der KI in Abhängigkeit der Schwierigkeit des Problems erheben können. Hierzu haben wir uns überlegt, verschiedene Aufgaben von Advent of Code zu lösen und mit der KI Bugs in unseren Lösungen zu debuggen. Advent of Code ist ein jährlicher online Adventskalender mit 25 Programmieraufgaben, die von Tag zu Tag schwieriger werden$^{11}$. Jeder Tag besteht dabei aus zwei Aufgabenteilen. Wir haben uns dazu entschiedenen, alle geradzahligen Tage bis einschließlich Tag 12 zu lösen. Wir beschränken uns auf die geradzahligen Tage, da es keinen großen Unterschied zwischen den einzelnen Tagen geben sollte und wir somit einen größeren Schwierigkeitsbereich in der gleichen Zeit untersuchen können.
 
-Hierbei können wir für jedes Problem beurteilen, wie präzise und für den User verständlich sowie hilfreich die KI den Grund für das Problem formulieren kann. Außerdem können wir beurteilen, wie sehr sie es geschafft hat den zugrundeliegenden Fehler zu erkennen, oder ob es ihr auschließlich gelang einen Folgefehler zu erkennen. Um dies zu tun, haben wir insgesamt sieben Funktionen geschrieben, von denen jede einen Bug mit steigender Komplexität enthält, den die KI gefragt wird zu finden.
+Außerdem vermuten wir, dass es einfacher ist für die KI Tippfehler zu finden, anstatt Logikfehler zu finden, da sich Tippfehler meist bereits aus dem Code rauslesen lassen, wohingegen für Logikfehler meist der genaue Zustand des Programs an der richtigen Stelle überwacht werden muss. Tippfehler heißt hierbei, wenn nur ein paar Zeichen im Code falsch eingegeben wurden, wohingegen Logikfehler bedeutet, dass der Lösungsansatz falsch ist oder bestimmte (Sonder-)Fälle nicht behandelt. Um diese Vermutung zu überprüfen, testen wir die KI in jedem Aufgabenteil der 6 Tage einmal mit einem Tippfehler und einmal mit einem Logikfehler.
+
+Die Bugs mit denen wir die KI testen sind entweder uns selbst beim Lösen der Aufgaben passiert, oder wir haben sie absichtlich in den Code eingebaut, falls uns kein Fehler beim Lösen der Aufgabe unterlaufen ist. 
+
+Des weieteren werden wir beurteilen, wie verständlich und hilfreich die KI den Grund für den Bug formulieren kann.
 
 \section{Ergebnisse}
 
-Alle Test Funktionen und die Ergebnisse der KI sind unter folgendem Link zu finden: \url{https://github.com/Papierkorb2292/AI-Debugger/blob/c08f8f01a267f1b80094e715a3c8b819b1061ae7/testWorkspace/test.py}
+Alle Test Funktionen und die Ergebnisse der KI sind unter folgendem Link zu finden TODO: \url{https://github.com/Papierkorb2292/AI-Debugger/blob/c08f8f01a267f1b80094e715a3c8b819b1061ae7/testWorkspace/test.py}
 
-Bei den ersten Tests hatte die KI zunächst Probleme zu verstehen, dass sie überhaupt Debuggen soll, und meinte unter anderem, dass es ihr schlichtweg nicht möglich wäre Code zu debuggen, obwohl der KI die Kommandos bereitgestellt wurden. Nachdem wir die erste Prompt angepasst haben, konnte die KI die Kommandos korrekt erkennen und erfolgreich den Debug Prozess übernehmen.
+Folgendes Diagramm zeigt für jeden der getesteten Tagen, ob die jeweilige Art von Bug in den Aufgabenteilen erfolreich gefunden wurde (angekreuzt).
 
-Folgendes sind die Ergebnisse der KI für die verschiedenen Funktionen:
-
-\begin{itemize}
-	\item Funktion 1 (Fakultät wird mit Addition statt Multiplikation berechnet): Die KI konnte den Bug finden und korrekt beschreiben
-	\item Funktion 2 (Bei der Summenberechnung wird mit Index 1 statt 0 angefangen): Die KI konnte den Bug finden und korrekt beschreiben
-	\item Funktion 3 (Bei der Maximumfindung wird der \texttt{<} statt dem \texttt{>} Operator verwendet): Die KI konnte den Bug finden und korrekt beschreiben
-	\item Funktion 4 (Bei der Primzahlbedingung fehlt bei Quadratzahlen der zweithöchste Teiler): Die KI konnte den Bug finden und eine mögliche Behebung beschreiben, hat aber nicht direkt die Verbindung zu Quadratzahlen gezogen, sondern den Bug stattdessen als ein generelles Problem beschrieben, ohne auf spezifischen Input einzugehen.
-	\item Funktion 5 (Bei der Bestimmung, ob die Position in dem Intervall liegt, wird das Ende nicht als Exklusiv, sondern Inklusiv betrachtet): Die KI konnte den Bug finden und korrekt beschreiben
-	\item Funktion 6 (Wenn \texttt{tree is None} zutrifft, sollte eigentlich -1 statt 0 zurückgegeben werden): Die KI erkennt zwar, dass bei Leaf Nodes nicht der richtige Wert zurückgegeben wird, allerdings denkt die KI, dass dies gelöst werden kann, indem man \texttt{return 1} mit \texttt{return 0} ersetzt, obwohl im Code bereits \texttt{return 0} an der entsprechenden Stelle steht, was eigentlich mit \texttt{return -1} ersetzt werden muss. Es sind hier also nur Ansätze der richtigen Lösung vorhanden.
-	\item Funktion 7 (Bei der Implementation des Algorithmus wurde vergessen, rekursiv für die Child Nodes zu überprüfen, ob sie balanziert sind): Die KI meint fälschlicherweise, dass der Fehler im Algorithmus für Höhe läge, denn obwohl der Bug dort behoben wurde, schlägt sie wieder vor \texttt{return 1} mit \texttt{return 0} zu ersetzen (Obwohl im Code \texttt{return -1} stand).
-\end{itemize}
-
-Während wir die Tests durchgeführt haben, ist uns aufgefallen, dass die KI oft dazu neigt, sich,verglichen zum normalen Debuggen, nicht genug über den Code und den Zustand des Programms zu informieren. Wenn wir beispielsweise die KI auf eine der Test-Zeilen verwiesen haben (wie \texttt{assert calculate\_factorial(1) == 1}), hat sie sich oft nicht selbst diese Zeile angeschaut, sondern hat direkt blind ein ``STEPINTO'' Kommando ausgeführt. Außerdem hat sie sich dementsprechend auch nicht die Zeilen von vor und nach dem Bug angeschaut, von der sie beispielsweise auf den Aufbau der Binären Bäume hätte schließen können.
+TODO
 
 \section{Ergebnissdiskussion}
 
-Die Ergebnisse sind vielversprechend, da sie zeigen, dass es heutigen KIs bereits möglich ist die Funktionsweise von Debug Prozessen zu verstehen und zu reproduzieren.
+Die Ergebnisse sind vielversprechend, da sie zeigen, dass es heutigen KIs bereits möglich ist die grundlegende Funktionsweise von Debug Prozessen zu reproduzieren. Außerdem TODO (Vermutungen)
 
-Allerdings muss auch beachtet werden, dass die Bugs in unseren Tests für die KI speziell für dieses Projekt eingebaut wurden, und es somit eine Abweichung von natürlich auftretenden Bugs geben könnte. Außerdem waren die Algorithmen, in denen wir diese Bugs eingebaut haben, häufig vorkommende Algorithmen, bei denen es möglich wäre, dass die KI diese bereits kannte. Aus diesen Gründen könnten die Ergebnisse in einem realen Debug Prozess abweichen.
 
-Darüber hinaus ist uns aufgefallen, dass die KI vor allem bei komplexeren Datenstrukturen, wie dem Binären Baum aus Aufgabe 6 und 7, Probleme hatte, den Zustand dieser Datenstruktur aufzurufen. Dies könnte daran liegen, dass sich die KI oft nicht die Funktionsdeklaration angeschaut hat, da direkt in der ersten Zeile der Funktion pausiert wurde, sodass die KI nicht sicher wusste, wie die Parameter der Funktion heißen. Außerdem ist der Zugang, den die KI zu Variablen hatte, limitierter als der für Programmierende, da die KI sich nur direkt die Werte von Variablen ausgeben lassen kann (was bei Funktionen und Objekten häufig nur Speicheraddressen sind), wohingegen Programmierende sich auch den Inhalt dieses Speichers anschauen können. Eine mögliche Lösung hierfür wäre es, der KI auch über die Felder von Objekten zu informieren, sodass sie sich anschließend auch den Inhalt dieser Felder anschauen kann.
-
-Zusätzlich dazu ist das Problem aufgekommen, dass die KI zu wenig Zeilen einliest. Dies ist bestehen geblieben, obwohl wir nach den ersten Tests sie für jeden weiteren Durchlauf in der ersten Prompt nochmal darauf hingewiesen haben, dass sie für Zeilen, deren Code sie nicht weiß, diesen anfordern soll. Weitere Anpassungen der Prompts scheinen nötig zu sein, um die KI dazu zu bringen, genügen Code anzufordern, um den Kontext des Programms verstehen zu können.
 
 \section{Fazit und Ausblick}
 
@@ -242,6 +230,7 @@ $^8$ OpenAi, ``OpenAI Platform'', Information über\\
 $^9$ OpenAi, ``ChatGPT'', Die ChatGPT KI\\
 \url {https://chatgpt.com}, besucht am 01.07.2024\\
 $^{10}$ OpenAi, ``Introduction - OpenAI API'', Tool zum Ausprobieren, in was für Tokens ein Text von OpenAI aufgeteilt wird\\
-\url {https://platform.openai.com/tokenizer}, besucht am 01.07.2024
-
+\url {https://platform.openai.com/tokenizer}, besucht am 01.07.2024\\
+$^{11}$ Advent of Code, ``About - Advent of Code 2024'', Beschreibung der Advent of Code Webseite\\
+\url {https://adventofcode.com/2024/about}, besucht am 23.01.2025\\
 \end{document}
