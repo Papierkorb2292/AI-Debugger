@@ -114,7 +114,8 @@ Weil ein Debug Server direkt mit dem auszuführenden Programm interagiert, ist d
 Folgendes ist eine Veranschaulichung, wie der Debug Prozess also aufgebaut ist:
 
 \begin{center}
-	\includegraphics[width=0.5\textwidth]{debugger}
+	\includegraphics[width=0.5\textwidth]{debugger}\\
+	\small{Die schematische Struktur eines Standard Debug Prozesses}
 \end{center}
 
 \section{Vorgehensweise, Materialien und Methoden}
@@ -132,7 +133,8 @@ Der wichtigste Teil ist allerdings, wie die KI mit ihren Nachrichten mit dem Ben
 Folgendes Diagramm veranschaulicht den nun erweiterten Aufbau des Debuggers zusammen mit der Kommunikation mit der KI.
 
 \begin{center}	
-	\includegraphics[width=0.875\textwidth]{ai_integration}
+	\includegraphics[width=0.875\textwidth]{ai_integration}\\
+	\small{Die schematische Struktur des Debug Prozesses mit der KI Integration}
 \end{center}
 
 Um zu verstehen, wie die Kommunikation zwischen dem Debug Adapter und dem KI-Debugger-Dienst funktioniert, betrachten wir erstmal genauer, wie der KI-Debugger-Dienst die verschiedenen Nachrichten verarbeitet:
@@ -203,7 +205,8 @@ Folgende Tabelle zeigt für jeden der getesteten Tagen, ob die jeweilige Art von
 	Teil 1, Tippfehler  & \cmark$_V$ & \cmark$_V$ & \xmark$_F$ & \xmark$_F$ &  \xmark$_F$ & \xmark$_T$ \\
 	Teil 2, Tippfehler  & \cmark$_V$ & \xmark$_F$ & \cmark$_O$ & \cmark$_V$ &  \xmark$_T$ & \cmark$_V$ \\
 	\hline
-\end{tabular}
+\end{tabular}\\
+\small{Tabellarische Darstellung der Nutzbarkeit des KI Debuggers in verschiedenen Aufgaben von AoC 2023}
 \end{center}
 
 Insgesamt konnten mit dem KI Debugger über 12 Teilaufgaben also 7 Logikfehler und 6 Tippfehler gefunden werden.
