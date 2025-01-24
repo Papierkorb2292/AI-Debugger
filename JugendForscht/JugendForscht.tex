@@ -81,7 +81,7 @@ Außerdem kann die KI folgendes Kommando erhalten:
 	\item ``PAUSED on line [Zeile] in file [Datei]'' (Wenn das Programm pausiert).
 \end{itemize}
 
-Zum Testen dieser KI haben wir sie mit verschiedenen Bugs ausprobiert und jeweils beurteilt, wie hilfreich die Antwort der KI zum Beheben der Bugs war. Hierbei sind wir zum Schluss gekommen, dass die KI mit den gegebenen Kommandos in der Lage ist, erfolgreich Breakpoints zu setzen und anschließend Schrittweise durch ein Program durchzugehen, wodurch es einfache Bugs finden und beschreiben kann. Allerdings ist uns auch aufgefallen, dass die KI mit den gegebenen Kommandos noch Probleme hat komplexere Datenstrukturen im Code nachzuvollziehen.
+Zum Testen dieser KI haben wir sie mit verschiedenen Bugs ausprobiert und jeweils beurteilt, wie hilfreich die Antwort der KI zum Beheben der Bugs war. Hierbei sind wir zum Schluss gekommen, dass die KI mit den gegebenen Kommandos in der Lage ist, erfolgreich Breakpoints zu setzen und anschließend Schrittweise durch ein Program durchzugehen, wodurch es einfache Bugs finden und beschreiben kann. Allerdings ist uns auch aufgefallen, dass komplexere Datenstrukturen im Code und komplexere Programverläufe mit den gegebenen Kommandos noch ein Problem für die KI darstellen, weil die KI viele unwichtige Information erhält, die zu ungenaueren Ergebnissen führen können.
 
 Aus unseren Ergebnissen schließen wir, dass KIs bereits heute in der Lage sind, den Debug Prozess zu übernehmen und zu steuern, allerdings scheinen sie mit unserer Implementation noch nicht in der Lage zu sein, komplexere Bugs zu finden. Aus diese Grund sehen wir aber in diesem Bereich auch noch viel Potenzial für weitere Entwicklung, um die KI besser als Debugger einsetzen zu können.
 
@@ -147,7 +147,7 @@ Alle der KI zur Verfügung stehenden Kommandos werden ihr in der ersten Nachrich
 
 Da wir davon ausgehen, dass die KI nicht immer die Fragestellung ausreichend verstehen wird (unter anderem, wenn der zu findende Bug nicht gut genug beschrieben wird), haben wir ihr außerdem die Möglichkeit gegeben, Fehler auszugeben, indem sie das Kommando ``ERROR [Fehlermeldung]'' sendet. Dieses Kommando wird an den Editor weitergeleitet, sodass ein User die Fehlermeldung sehen kann und die Anfrage anpassen kann.
 
-Wie bereits erwähnt ist es außerdem wichtig, dass die KI Zugriff auf den Code des Programs bekommt. Auch hierfür gibt es ein Kommando, welches eine Zeile aus einer Datei zu der KI senden kann, wenn die KI ``LINE [Zeile] [Datei]'' sendet. Hierbei meiden wir, eine gesamte Datei auf einmal an die KI zu senden, da dies darfür sorgen könnte, dass die KI sich nicht den genauen Inhalt der einzelnen Zeilen richtig merken kann. Außerdem würde, wenn man der KI eine ganze Datei senden würde, dies viele Tokens verbrauchen, was schlussendlich dafür sorgen würde, dass der Debug Prozess mehr Geld köste (Siehe \autoref{sec:compression} \nameref{sec:compression}).
+Wie bereits erwähnt ist es außerdem wichtig, dass die KI Zugriff auf den Code des Programs bekommt. Auch hierfür gibt es ein Kommando, welches eine Zeile aus einer Datei zu der KI senden kann, wenn die KI ``LINE [Zeile] [Datei]'' sendet. Hierbei meiden wir, eine gesamte Datei auf einmal an die KI zu senden, da dies darfür sorgen könnte, dass die KI sich nicht den genauen Inhalt der einzelnen Zeilen richtig merken kann. Außerdem würde, wenn man der KI eine ganze Datei senden würde, dies viel Text zu der KI Konversation hinzufügen, was schlussendlich dafür sorgen würde, dass der Debug Prozess mehr Geld köste.
 
 \subsection{Einbinden der KI}
 
@@ -159,24 +159,9 @@ Ein zusätzliches wichtiges Kommando ist ``EVAL [Ausdruck]'', welches der KI erl
 
 Zuletzt hat die KI außerdem ein ``CAUSE [Beschreibung]'' Kommando, mit dem sie zum Abschluss den von ihr herausgefunden Grund ausgeben kann, warum der Bug aufgetreten ist.
 
-\subsection{Komprimierung der Konversation}
-\label{sec:compression}
-
-Ein weiterer wichtiger Aspekt ist die Komprimierung der übermittelten Daten. Dies ist aufgrund des Bezahlmodells von OpenAI wichtig, das nach dem Prinzip sogenannter 'Tokens' fungiert, für deren Anzahl man bezahlt$^7$. Dieser Prozess heißt Tokenisierung und funktioniert nach Folgender Reihenfolge:
-\begin{enumerate}
-	\item Normalisierung des Textes: Im Kern wird hier nichts weiter gemacht als Großbuchstaben in Kleinbuchstaben umgewandelt und unnötige Leerzeichen entfernt werden.
-	\item Aufteilung: Der normalisierte Text wird nun in Wörter zerlegt. Dies kann durch das Aufteilen an Leerzeichen und Satzzeichen geschehen.
-	\item Tokenisierung: Der nun vorliegende Text wird zum Schluss von Algorithmen zerlegt und in Tokens mit einer vordefinierten ID eingeteilt. Aufgrund dieser ID ist es dem GPT Modell möglich das Wort zu interpretieren.
-\end{enumerate}
-
-Beispielsweise wird der Satz ``Die Abkürzung für Künstliche Intelligenz ist KI'' in folgende 16 Tokens aufgeteilt$^{10}$:\\
-\texttt{Die| Ab|k|ür|zung| für| K|ünst|liche| Int|ell|igen|z| ist| K|I}
-
-Unser Ziel ist also so viel sogenannte 'one-word-tokens' zu verwenden wie möglich. Um das zu erreichen, benutzen wir KI, speziell das ChatGPT-4o Modell, um Prompts zu optimieren.
-
 \subsection{Erheben von Daten}
 
-Da nun die KI in den Debug Prozess integriert wurde, ist der nächste Schritt die Erfolgsrate der KI beim Debuggen herauszufinden. Hierfür benötigen wir Beispielprobleme, mit denen wir die KI testen können. Außerdem haben wir vor, die Schwierigkeit eines Problems bewerten zu können, sodass wir die Erolgsrate der KI in Abhängigkeit der Schwierigkeit des Problems erheben können. Hierzu haben wir uns überlegt, verschiedene Aufgaben von Advent of Code zu lösen und mit der KI Bugs in unseren Lösungen zu debuggen. Advent of Code ist ein jährlicher online Adventskalender mit 25 Programmieraufgaben, die von Tag zu Tag schwieriger werden$^{11}$. Jeder Tag besteht dabei aus zwei Aufgabenteilen. Wir haben uns dazu entschiedenen aus dem Kalender von 2023, alle geradzahligen Tage bis einschließlich Tag 12 zu lösen. Wir beschränken uns auf die geradzahligen Tage, da es keinen großen Unterschied zwischen den einzelnen Tagen geben sollte und wir somit einen größeren Schwierigkeitsbereich in der gleichen Zeit untersuchen können. Außerdem haben wir 2023 gewählt, da dies noch nach dem Cutoff Datum für die von uns verwendete KI ist (ChatGPT-4o), was bedeutet, dass keine Lösungen für die Aufgaben in ihren Trainingsdaten enthalten sind. Dies sollte die Ergebnisse realistischer machen, da beim Verwenden der KI für echte Bugs ebenfalls mindestens relevante Teile des Programs nicht in den Trainingsdaten enthalten sind. Wir vermuten, dass die KI besser in der Lage ist, Bugs in den Aufgaben vom Anfang des Dezembers als später im Dezember zu finden, da die Aufgaben später im Dezember meist komplexer sind.
+Da nun die KI in den Debug Prozess integriert wurde, ist der nächste Schritt die Erfolgsrate der KI beim Debuggen herauszufinden. Hierfür benötigen wir Beispielprobleme, mit denen wir die KI testen können. Außerdem haben wir vor, die Schwierigkeit eines Problems bewerten zu können, sodass wir die Erolgsrate der KI in Abhängigkeit der Schwierigkeit des Problems erheben können. Hierzu haben wir uns überlegt, verschiedene Aufgaben von Advent of Code zu lösen und mit der KI Bugs in unseren Lösungen zu debuggen. Advent of Code ist ein jährlicher online Adventskalender mit 25 Programmieraufgaben, die von Tag zu Tag schwieriger werden$^{11}$. Jeder Tag besteht dabei aus zwei Aufgabenteilen. Wir haben uns dazu entschiedenen aus dem Kalender von 2023, alle geradzahligen Tage bis einschließlich Tag 12 zu lösen. Wir beschränken uns auf die geradzahligen Tage, da es keinen großen Schwierigkeitsunterschied zwischen den einzelnen Tagen geben sollte und wir somit einen größeren Schwierigkeitsbereich in der gleichen Zeit untersuchen können. Außerdem haben wir 2023 gewählt, da dies noch nach dem Cutoff Datum für die von uns verwendete KI ist (ChatGPT-4o), was bedeutet, dass keine Lösungen für die Aufgaben in ihren Trainingsdaten enthalten sind. Dies sollte die Ergebnisse realistischer machen, da beim Verwenden der KI für echte Bugs ebenfalls mindestens relevante Teile des Programs nicht in den Trainingsdaten enthalten sind. Wir vermuten, dass die KI besser in der Lage ist, Bugs in den Aufgaben vom Anfang des Dezembers als später im Dezember zu finden, da die Aufgaben später im Dezember meist komplexer sind.
 
 Außerdem vermuten wir, dass es einfacher ist für die KI Tippfehler zu finden, anstatt Logikfehler zu finden, da sich Tippfehler meist bereits aus dem Code rauslesen lassen, wohingegen für Logikfehler meist der genaue Zustand des Programs an der richtigen Stelle überwacht werden muss. Tippfehler heißt hierbei, wenn nur ein paar Zeichen im Code falsch eingegeben wurden, wohingegen Logikfehler bedeutet, dass der Lösungsansatz falsch ist oder bestimmte (Sonder-)Fälle nicht behandelt. Um diese Vermutung zu überprüfen, testen wir die KI in jedem Aufgabenteil der 6 Tage einmal mit einem Tippfehler und einmal mit einem Logikfehler.
 
@@ -184,7 +169,7 @@ Die Bugs mit denen wir die KI testen sind entweder uns selbst beim Lösen der Au
 
 \section{Ergebnisse}
 
-Alle Test Funktionen und die Ergebnisse der KI sind unter folgendem Link zu finden TODO: \url{https://github.com/Papierkorb2292/AI-Debugger/blob/c08f8f01a267f1b80094e715a3c8b819b1061ae7/testWorkspace/test.py}
+Alle Test Funktionen und die Ergebnisse der KI sind unter folgendem Link zu finden: \url{https://github.com/Papierkorb2292/AI-Debugger/tree/main/testWorkspace/aoc23}
 
 Folgende Tabelle zeigt für jeden der getesteten Tagen, ob die jeweilige Art von Bug in den Aufgabenteilen erfolreich durch die KI bestimmt werden konnte. Hierbei haben die Zeichen in der Tabelle folgende Bedeutung:
 \begin{enumerate}
@@ -193,7 +178,7 @@ Folgende Tabelle zeigt für jeden der getesteten Tagen, ob die jeweilige Art von
 \item \cmark$_E$ (Extra Info): Eine hilfreiche Beschreibung des Bugs war in der Antwort der KI enthalten, allerdins erst, nachdem der initialien Prompt ein extra Verweis auf bestimmte Programmstellen hinzugefügt wurde, in denen der Bug zu finden ist.
 \item \xmark$_T$ (Tokens): Der Bug ließ sich nicht mit der KI bestimmen, weil der Debug Prozess zu viele Schritte benötigte, was die KI Konversation sehr lang und damit teurer gemacht hat, weshalb wir den Debug Prozess unterbrochen haben. Dies ist oft bei Schleifen passiert, die hätten übersprungen werden können. Stattdessen war die Antwort der KI, die Schleife schrittweise zu durchgehen, ohne das ``EVAL'' Kommando für das Vearbeiten von Variablenwerten zu verwenden.
 \item \xmark$_B$ (Beendet):   Der Bug ließ sich nicht mit der KI bestimmen, weil die KI das Program verlassen hat ohne den Bug zu beschreiben
-\item \xmark$_F$ (Fehlerhaft): Der Bug ließ sich nicht mit der KI bestimmen, weil die Antwort den KI den Bug fehlerhaft beschrieben hat oder einen gar nicht vorhandenen Bug beschrieben hat.
+\item \xmark$_F$ (Fehlerhaft): Der Bug ließ sich nicht mit der KI bestimmen, weil die Antwort der KI den Bug fehlerhaft beschrieben hat oder einen gar nicht vorhandenen Bug beschrieben hat.
 \end{enumerate}
 \begin{center}
 \begin{tabular}{|c|c|c|c|c|c|c|}
@@ -237,10 +222,11 @@ Zunächst möchten wir darauf aufmerksam machen, dass mehr und realistischere Te
 
 Wir erwarten außerdem, dass sich wesentlich bessere Ergebnisse erzielen lassen würden, wenn man anstatt einer allgemeinen KI, die auf viele verschiedene Aufgaben trainiert ist, eine KI spezifisch für das Debuggen trainiert. Es wäre beispielsweise möglich, diese KI auch auf die Syntax von Programmiersprachen spezialisiert zu trainieren, sodass sie das Program und die Aufgabe besser versteht. Ein möglicher Start hierfür wäre die KI ``Codex'' von OpenAI, die speziell auf das Verständis von Code trainiert ist. Dies ist auch das KI Modell, auf welchem Github Copilot aufbaut.
 
-Um zusätzliche Trainingsdaten für eine solche KI zu erheben, wäre es möglich, die Middleware bei normalen Debug Prozessen mitlaufen zu lassen, sodass die Kommunikation zwischen Editor und Debug Adapter aufgezeichnet wird. Das würde es erlauben die KI auf die aufgezeichneten Daten zu trainieren, sodass die KI schließlich den Editor und damit auch die Programmierenden nachstellt. Fraglich ist, ob es möglich wäre von den aufgezeichneten Daten auf das Problem und die Problemlösung zu schließen, oder ob es notwendig wäre, dass die Programmierenden, wenn sie ihre Debug Prozesse aufzeichnen möchten, auch zusätzliche Informationen über das Problem und die anschließend angewandte Lösung angeben müssten, sodass die KI dafür trainiert werden kann, das Problem einzulesen und die Lösung auszugeben.
+Um zusätzliche Trainingsdaten für eine solche KI zu erheben, wäre es möglich, die Middleware bei normalen Debug Prozessen mitlaufen zu lassen, sodass die Kommunikation zwischen Editor und Debug Adapter aufgezeichnet wird. Das würde es erlauben, die KI auf die aufgezeichneten Daten zu trainieren, sodass die KI schließlich den Editor und damit auch die Programmierenden nachstellt. Fraglich ist, ob es möglich wäre von den aufgezeichneten Daten auf das Problem und die Problemlösung zu schließen, oder ob es notwendig wäre, dass die Programmierenden, wenn sie ihre Debug Prozesse aufzeichnen möchten, auch zusätzliche Informationen über das Problem und die anschließend angewandte Lösung angeben müssten, sodass die KI dafür trainiert werden kann, das Problem einzulesen und die Lösung auszugeben.
 
 Eine weitere große Verbesserungsmöglichkeit ist es, dem bereits von uns erstelltem System mehr Kommandos hinzuzufügen. Beispielweise könnte man es der KI möglich machen, eine Liste aller Variablen zu erhalten, den Call stack auszulesen (also die Reihenfolge der Funktionsaufrufe zu erhalten), den Wert einer Variable zu ändern, oder auch die Möglichkeit geben, das Programm neu zu starten, um Daten aus dem vorherigen Durchlauf in einem neuen Versuch, das Program zu debuggen, anwenden zu können. Dies sind Aktionen, die auch beim normalen Debuggen oft nützlich sind, und die es der KI ermöglichen könnten, das Programm besser zu debuggen.
 
+\clearpage
 \section{Quellen- und Literaturverzeichnis}
 
 $^1$ Wikimedia Foundation Inc.,  ``Künstliche Intelligenz - Wikipedia'', grundlegende Information zu künstlicher Intelligenz\\
