@@ -8,6 +8,7 @@
 \usepackage{amssymb}
 \usepackage{graphicx}
 \usepackage{hyperref}
+\usepackage{pifont}
 
 \hypersetup{
   colorlinks   = true, %Colours links instead of ugly boxes
@@ -21,6 +22,9 @@
 \addtokomafont{subsection}{\normalfont}
 
 \setcounter{tocdepth}{2}
+
+\newcommand{\cmark}{\ding{51}}%
+\newcommand{\xmark}{\ding{55}}%
 
 \graphicspath{ {./images/} }
 
@@ -67,14 +71,14 @@ Nun müssen die Daten des Debug Adapters (DA) in für die KI verständliche Begr
 	\item ``STEP'' (Einen Programmschritt ausführen)
 	\item ``STEPINTO'' (In einen Funktionsaufruf eintreten)
 	\item ``STEPOUT'' (Aus einem Funktionsaufruf austreten)
-	\item ``VARIABLE [Name]'' (Variablen auslesen)
+	\item ``EVAL [Ausdruck]'' (Einen Ausdruck evaluieren)
 	\item ``LINE [Zeile] [Datei]'' (Einzelne Zeilen von Dateien auslesen)
 	\item ``ERROR [Fehlermeldung]'' (Wenn die KI, nachdem sie die Anweisungen erhalten hat, irgendetwas vom debuggen abhält)
 	\item ``CAUSE [Beschreibung]'' (Wenn schlussendlich der Grund für den Bug gefunden wurde).
 \end{itemize}
 Außerdem kann die KI folgendes Kommando erhalten:
 \begin{itemize}
-	\item ``PAUSED [Zeile] [Spalte] [Datei]'' (Wenn das Programm pausiert).
+	\item ``PAUSED on line [Zeile] in file [Datei]'' (Wenn das Programm pausiert).
 \end{itemize}
 
 Zum Testen dieser KI haben wir sie mit verschiedenen Bugs ausprobiert und jeweils beurteilt, wie hilfreich die Antwort der KI zum Beheben der Bugs war. Hierbei sind wir zum Schluss gekommen, dass die KI mit den gegebenen Kommandos in der Lage ist, erfolgreich Breakpoints zu setzen und anschließend Schrittweise durch ein Program durchzugehen, wodurch es einfache Bugs finden und beschreiben kann. Allerdings ist uns auch aufgefallen, dass die KI mit den gegebenen Kommandos noch Probleme hat komplexere Datenstrukturen im Code nachzuvollziehen.
@@ -135,7 +139,7 @@ Um zu verstehen, wie die Kommunikation zwischen dem Debug Adapter und dem KI-Deb
 
 Da DAP Nachrichten im JSON Format gesendet werden und dabei oft viele Informationen über den Zustand des Programms enthalten, bei denen wichtig ist, dass sie akkurat sind, wie Dateipfade, Breakpoint Ids, etc., haben wir uns dagegen entschieden, die KI direkt diese JSON Objekte lesen und auslesen zu lassen, da dann die KI viel mehr Wert darauf legen müsste, vollständig fehlerfreie JSON Objekte auszugeben, was die Qualität des eigentlichen Debuggens beinträchtigen könnte.
 
-Stattdessen haben wir uns überlegt, die KI mit dem KI Debugger Dienst über simple Textnachrichten kommunizieren zu lassen, von denen jede ein Kommando darstellt. So ein Kommando ist aufgebaut aus einem Kommando Namen und einer Liste von Argumenten, die das Kommando benötigt. Beispielsweise haben wir das Kommando ``BREAKPOINT [Zeile] [Datei]'' erstellt, welches der KI erlaubt einen Breakpoint in einer bestimmten Datei und Zeile zu setzen, was bedeutet, dass das Programm pausiert, wenn es diese Zeile erreicht. Über die gleiche Art und Weise werden auch bestimmte Events der KI mitgeteilt, indem die KI beispielsweise das Kommando ``PAUSED [Zeile] [Spalte] [Datei]'' erhält, sobald das Programm pausiert.
+Stattdessen haben wir uns überlegt, die KI mit dem KI Debugger Dienst über simple Textnachrichten kommunizieren zu lassen, von denen jede ein Kommando darstellt. So ein Kommando ist aufgebaut aus einem Kommando Namen und einer Liste von Argumenten, die das Kommando benötigt. Beispielsweise haben wir das Kommando ``BREAKPOINT [Zeile] [Datei]'' erstellt, welches der KI erlaubt einen Breakpoint in einer bestimmten Datei und Zeile zu setzen, was bedeutet, dass das Programm pausiert, wenn es diese Zeile erreicht. Über die gleiche Art und Weise werden auch bestimmte Events der KI mitgeteilt, indem die KI beispielsweise das Kommando ``PAUSED on line [Zeile] in file [Datei]'' erhält, sobald das Programm pausiert.
 
 Alle der KI zur Verfügung stehenden Kommandos werden ihr in der ersten Nachricht mitgeteilt, zusammen mit ihrem Sinn als Debugger und dem zu behebenden Bug. Das Vermitteln der Kommandos geschieht hierbei durch festgelegte Sätze, diese Kommandos werden also in eine sprachliche Form gebracht, die die Kommunikation mit dem LLM ermöglicht. Beispielsweise entspricht das Kommando ``BREAKPOINT'' dem Satz: ``You can set breakpoints in the code by starting your message with "BREAKPOINT" followed by the line number and the file name.'' Dieses Prinzip wird auf jedes Kommando angewendet. Nun, da die Befehle für die KI vorliegen, werden diese übermittelt und die Antworten empfangen. Die jeweiligen Antworten sind so formatiert, dass sie ohne großen Aufwand weiterverarbeitet werden können.
 
@@ -149,7 +153,7 @@ Dieses Kommando System muss nun in den Debug Prozess eingebunden werden, da im M
 
 Während in Folge eines dieser Kommandos das Program weiterläuft, bis es am nächsten Breakpoint angekommen ist oder den angeforderten Schritt ausgeführt hat, wird hingegen die Konversation mit der KI pausiert. Diese geht erst weiter, wenn das Programm wieder pausiert hat, woraufhin die bereits genannte ``PAUSED'' Nachricht an die KI gesendet wird. Auf diese Art und Weise erhalten wir eine Art Rückkopplung, die abwechselnd den Debug Prozess oder die KI laufen lässt und so der KI das schritthafte Debuggen ermöglicht.
 
-Ein zusätzliches wichtiges Kommando ist ``VARIABLE [Name]'', welches der KI erlaubt den Wert einer Variable zu erfragen, sodass die KI den Zustand des Programms aktiv verfolgen kann und dadurch direkt Rückschlüsse darauf ziehen kann, an welcher Stelle im Code der Zustand vom erwarteten Zustand abweicht.
+Ein zusätzliches wichtiges Kommando ist ``EVAL [Ausdruck]'', welches der KI erlaubt das Program Berechnungen durchführen zu lassen, um beispielsweise den Wert von Variablen auszulesen, sodass die KI den Zustand des Programms aktiv verfolgen kann und dadurch direkt Rückschlüsse darauf ziehen kann, an welcher Stelle im Code der Zustand vom erwarteten Zustand abweicht.
 
 Zuletzt hat die KI außerdem ein ``CAUSE [Beschreibung]'' Kommando, mit dem sie zum Abschluss den von ihr herausgefunden Grund ausgeben kann, warum der Bug aufgetreten ist.
 
@@ -182,22 +186,22 @@ Alle Test Funktionen und die Ergebnisse der KI sind unter folgendem Link zu find
 
 Folgende Tabelle zeigt für jeden der getesteten Tagen, ob die jeweilige Art von Bug in den Aufgabenteilen erfolreich durch die KI bestimmt werden konnte. Hierbei haben die Zeichen in der Tabelle folgende Bedeutung:
 \begin{enumerate}
-\item X_V (Vollständig): Der Ort des Bug und eine vollständige bzw. zum Lösen hinreichende Beschreibung der Ursache war in der Antwort der KI enthalten
-\item X_O (Ort): Nur der Ort des Bugs, aber keine hilfreiche Beschreibung war in der Antwort der KI enthalten.
-\item X_E (Extra Info): Eine hilfreiche Beschreibung des Bugs war in der Antwort der KI enthalten, allerdins erst, nachdem der initialien Prompt ein extra Verweis auf bestimmte Programmstellen hinzugefügt wurde, in denen der Bug zu finden ist.
-\item _T (Tokens): Der Bug ließ sich nicht mit der KI bestimmen, weil der Debug Prozess zu viele Schritte benötigte, was die KI Konversation sehr lang und damit teurer gemacht hat, weshalb wir den Debug Prozess unterbrochen haben. Dies ist oft bei Schleifen passiert, die hätten übersprungen werden können. Stattdessen war die Antwort der KI, die Schleife schrittweise zu durchgehen, ohne das 'EVAL' Kommando für das Vearbeiten von Variablenwerten zu verwenden.
-\item _B (Beendet):   Der Bug ließ sich nicht mit der KI bestimmen, weil die KI das Program verlassen hat ohne den Bug zu beschreiben
-\item _F (Fehlerhaft): Der Bug ließ sich nicht mit der KI bestimmen, weil die Antwort den KI den Bug fehlerhaft beschrieben hat oder einen gar nicht vorhandenen Bug beschrieben hat.
+\item \cmark$_V$ (Vollständig): Der Ort des Bug und eine vollständige bzw. zum Lösen hinreichende Beschreibung der Ursache war in der Antwort der KI enthalten
+\item \cmark$_O$ (Ort): Nur der Ort des Bugs, aber keine hilfreiche Beschreibung war in der Antwort der KI enthalten.
+\item \cmark$_E$ (Extra Info): Eine hilfreiche Beschreibung des Bugs war in der Antwort der KI enthalten, allerdins erst, nachdem der initialien Prompt ein extra Verweis auf bestimmte Programmstellen hinzugefügt wurde, in denen der Bug zu finden ist.
+\item \xmark$_T$ (Tokens): Der Bug ließ sich nicht mit der KI bestimmen, weil der Debug Prozess zu viele Schritte benötigte, was die KI Konversation sehr lang und damit teurer gemacht hat, weshalb wir den Debug Prozess unterbrochen haben. Dies ist oft bei Schleifen passiert, die hätten übersprungen werden können. Stattdessen war die Antwort der KI, die Schleife schrittweise zu durchgehen, ohne das ``EVAL'' Kommando für das Vearbeiten von Variablenwerten zu verwenden.
+\item \xmark$_B$ (Beendet):   Der Bug ließ sich nicht mit der KI bestimmen, weil die KI das Program verlassen hat ohne den Bug zu beschreiben
+\item \xmark$_F$ (Fehlerhaft): Der Bug ließ sich nicht mit der KI bestimmen, weil die Antwort den KI den Bug fehlerhaft beschrieben hat oder einen gar nicht vorhandenen Bug beschrieben hat.
 \end{enumerate}
 \begin{center}
 \begin{tabular}{|c|c|c|c|c|c|c|}
 	\hline
- 	Tag                 &  2  &  4  &  6  &  8  & 10  & 12  \\
+ 	Tag                 &  2         &  4         &  6         &  8         & 10          & 12         \\
 	\hline
-	Teil 1, Logikfehler & X_V & X_O &  _F & X_O &  _B &  _T \\
-	Teil 2, Logikfehler & X_V & X_V & X_E & X_V &  _T &  _F \\
-	Teil 1, Tippfehler  & X_V & X_V &  _F &  _F &  _F &  _T \\
-	Teil 2, Tippfehler  & X_V &  _F & X_O & X_V &  _T & X_V \\
+	Teil 1, Logikfehler & \cmark$_V$ & \cmark$_O$ & \xmark$_F$ & \cmark$_O$ &  \xmark$_B$ & \xmark$_T$ \\
+	Teil 2, Logikfehler & \cmark$_V$ & \cmark$_V$ & \cmark$_E$ & \cmark$_V$ &  \xmark$_T$ & \xmark$_F$ \\
+	Teil 1, Tippfehler  & \cmark$_V$ & \cmark$_V$ & \xmark$_F$ & \xmark$_F$ &  \xmark$_F$ & \xmark$_T$ \\
+	Teil 2, Tippfehler  & \cmark$_V$ & \xmark$_F$ & \cmark$_O$ & \cmark$_V$ &  \xmark$_T$ & \cmark$_V$ \\
 	\hline
 \end{tabular}
 \end{center}
