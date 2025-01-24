@@ -210,6 +210,8 @@ Allerdings lässt sich mit den von uns erhobenen Daten nicht klar bestätigen, d
 
 Eine mögliche Verbesserung, die wir uns zum besseren Einlesen des Programs und Navigieren über Schleifen hinweg überlegt haben, ist dass die KI nicht direkt mit dem Debuggen anfängt, sondern zunächst selbstständig relevante Sektionen des Programs einliest, um Stellen im Code auszugeben, die genauer auf den Bug untersucht werden sollten. Dies ähnelt auch mehr dem normalen Debug Vorgang durch Programmierende, welche zuerst den Code durchgehen, um Stellen zu finden, wo sie einen Bug vermuten würden. Anschließend könnte die KI wieder Kommandos ausgeben, um das Program (vielleicht merhmals) zu starten und zu warten, bis es bei der relevanten Stelle pausiert, sodass dann wieder wie zuvor mit dem Debugger durch das Program durchgegangen und der Zustand des Programs überwacht werden kann.
 
+Es ist außerdem wichtig zu erwähnen, dass die KI bei insgesamt 6 Bugs den Fehler falsch beschrieben hat, was bedeutet, dass man sich auch, wenn die KI eine Antwort zurückgibt, nicht auf die Korrektheit dieser Antwort verlassen sollte. Wie auch bei anderen Anwendungen von KI ist es wichtig, dass die Antwort der KI immer noch von Programmierenden überprüft wird, bevor sie angewandt wird. Dies bedeutet auch, dass unser KI Debugger nicht als selbständiges Program zum Entwickeln von Programmen verwendet werden sollte, sondern nur als eine Unterstützung für Programmierende, die sich bereits mit dem betroffenen Projekt auskennen und einschätzen können, ob die gegebene Erklärung für den Bug plausibel ist und diese Erklärung zusätzlich auch in der Lage sind zu testen.
+
 \section{Fazit und Ausblick}
 
 \subsection{Fazit}
