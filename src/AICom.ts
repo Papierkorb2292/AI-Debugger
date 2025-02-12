@@ -72,9 +72,10 @@ export class ChatGPTClient implements AIService {
           }
           const response = await apiClient.post('', inputData).catch(async (err) => {
             if(err.response && err.response.status === 429) {
-              terminalMessageCallback({ role: "info", content: "Hit OpenAI request limit, waiting 60s..."})
-              console.log("WARN: Hit OpenAI request limit, waiting 60s...")
-              await new Promise(r => setTimeout(r, 60*1000));
+              const waitTimeSeconds = err.response.headers['retry-after'];
+              terminalMessageCallback({ role: "info", content: `Hit OpenAI request limit, waiting ${waitTimeSeconds}s...`})
+              console.log(`WARN: Hit OpenAI request limit, waiting ${waitTimeSeconds}s...`)
+              await new Promise(r => setTimeout(r, waitTimeSeconds*1000));
               return apiClient.post('', inputData);
             } else {
               throw err;
@@ -384,7 +385,7 @@ function createAIInstructionPrompt(userPrompt: PromptOptions) {
 
       Start with debugging the code by setting breakpoints. Afterwards, you can start code execution with the message "CONTINUE".
       Afterwards, start stepping through the code using STEP, STEPINTO and STEPOUT.
-      Set breakpoints to skip over irrelevant loops. Use the LINE command to get the next dew lines to determine the line number for this breakpoint.
+      Set breakpoints to skip over irrelevant loops. Use the LINE command to get the next few lines to determine the line number for this breakpoint.
       Stepout will step out of entire methods, not only step out of the loop, so breakpoints must be used to skip only loops.
       ${getCmdExplanationsForContext(AICmdContext.CAUSE_FOUND)}
       ${getCmdExplanationsForContext(AICmdContext.SETUP)}
@@ -489,8 +490,12 @@ export class AIDebuggerService implements vscode.Disposable {
         const instructionPrompt = createAIInstructionPrompt(this.initialPrompt)
         console.log("AI INSTRUCTION:", instructionPrompt);
         this.addTerminalMessage({role: "system", content: instructionPrompt.prompt.cmd})
-        this.aiService.sendPrompt(createAIInstructionPrompt(this.initialPrompt), this.addTerminalMessage)
-          .then(response => this.handleAiResponse(response));
+        // Delay because vscode.workspace.findFiles doesn't work immediately after starting a debugger
+        // I don't see any api callback that would fix this, so setTimeout it is
+        setTimeout(() => {
+          this.aiService.sendPrompt(createAIInstructionPrompt(this.initialPrompt), this.addTerminalMessage)
+            .then(response => this.handleAiResponse(response));
+        }, 2000)
       }
       this.hasEnteredPauseForNotification = true;
       this.stoppedThread = message.body.threadId;
