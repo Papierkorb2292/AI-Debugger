@@ -72,7 +72,7 @@ export class ChatGPTClient implements AIService {
           }
           const response = await apiClient.post('', inputData).catch(async (err) => {
             if(err.response && err.response.status === 429) {
-              const waitTimeSeconds = err.response.headers['retry-after'];
+              const waitTimeSeconds = err.response.headers['retry-after'] || 60;
               terminalMessageCallback({ role: "info", content: `Hit OpenAI request limit, waiting ${waitTimeSeconds}s...`})
               console.log(`WARN: Hit OpenAI request limit, waiting ${waitTimeSeconds}s...`)
               await new Promise(r => setTimeout(r, waitTimeSeconds*1000));
