@@ -1,8 +1,11 @@
 import axios, { AxiosInstance } from 'axios';
-import { openAIKey } from './Secrets';
+
+import { openAIKey, openAIAdminKey } from './Secrets'; 
+
 import * as vscode from 'vscode';
 import { ProtocolMessage, Response, SetBreakpointsArguments } from './DebuggerProtocol';
 import { AITerminal, AITerminalMessage } from './AITerminal';
+import { exit } from 'process';
 export interface prompt {
   role?: string;
   cmd: string;
@@ -25,6 +28,9 @@ function copyPromptOptionsForPrompt(prompt: PromptOptions, newPrompt: prompt): P
 export interface AIService {
     sendPrompt(prompt: PromptOptions, terminalMessageCallback: (msg: AITerminalMessage) => void): Promise<string>;
 }
+export interface AIAdminService{
+    getBalance(): Promise<number>;
+}
 
 const apiClient = axios.create({
   baseURL: "https://api.openai.com/v1/chat/completions",
@@ -33,8 +39,28 @@ const apiClient = axios.create({
       Authorization: `Bearer ${openAIKey}`,
   },
 });
+const apiClientAdmin = axios.create({
+  baseURL: "https://api.openai.com/v1",
+  headers: {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${openAIAdminKey}`,
+},
+});
 
+export class ChatGPTClientAdmin implements AIAdminService{
+  async getBalance(): Promise<number> {
+    try {
+      const response = await apiClientAdmin.get("/dashboard/billing/credit_grants");
+      console.log(`Remaining balance: $${response.data.total_available}`);
+      return response.data.total_available;
+    } catch (error: any) {
+      console.error(`Error: ${error.response?.status}, ${error.response?.data || error.message}`);
+      return 404;
+    }
+  }
+}
 
+// TODO remove or rework code (3.5 in url is not optimal)
 export class ChatGPTClient implements AIService {
 
   private conversationHistory: { role: string, content: string}[] = [ ];
@@ -66,10 +92,11 @@ export class ChatGPTClient implements AIService {
 
       try {
           const inputData = {
-            model: 'gpt-4o',
+            model: 'gpt-4o', // maybe mini? check results
             messages: this.conversationHistory,
             temperature: 0
-          }
+          };
+
           const response = await apiClient.post('', inputData).catch(async (err) => {
             if(err.response && err.response.status === 429) {
               const waitTimeSeconds = err.response.headers['retry-after'] || 60;
@@ -419,8 +446,9 @@ export class AIDebuggerService implements vscode.Disposable {
 
   constructor(
     public aiService: AIService,
+    public aiAdminService: AIAdminService,
     public fileGetter: (url: string) => Thenable<string>,
-    private initialPrompt: PromptOptions
+    private initialPrompt: PromptOptions,
   ) {
     const _this = this;
     this.aiTerminal = new AITerminal({
@@ -451,7 +479,23 @@ export class AIDebuggerService implements vscode.Disposable {
         return callback;
       }
     });
+
+    this.initializeBalance();
   }
+
+  private async initializeBalance() {
+    try {
+      const oldBalance: number = await this.aiAdminService.getBalance();
+      console.log(`Old balance: ${oldBalance}`);
+      if (oldBalance < 0.20){
+        console.error("Insufficient balance, please top up your account.");
+        exit(1);
+      }
+    } catch (error) {
+      console.error("Error fetching balance", error);
+    }
+  }
+
 
   setMessageSenders(sendToEditor: (message: ProtocolMessage) => Promise<number>, sendToDebugger: (message: ProtocolMessage) => Promise<number>) {
     this.sendToEditor = sendToEditor;
