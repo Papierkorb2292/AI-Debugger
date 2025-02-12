@@ -1,18 +1,15 @@
-# 1. Fibonacci sequence
 def fibonacci(n):
     a, b = 0, 1
     for _ in range(n):
         a, b = b, a + b
     return a
 
-# 2. Factorial of a number
 def factorial(n):
     if n == 0:
         return 1
     else:
         return n * factorial(n-1)
 
-# 3. Check if a number is prime
 def is_prime(n):
     if n <= 1:
         return False
@@ -21,13 +18,11 @@ def is_prime(n):
             return False
     return True
 
-# 4. Find the greatest common divisor (GCD) of two numbers
 def gcd(a, b):
     while b:
         a, b = b, a % b
     return a
 
-# 5. Sort a list using bubble sort
 def bubble_sort(arr):
     n = len(arr)
     for i in range(n):
