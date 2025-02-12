@@ -9,7 +9,7 @@
             "request": "launch",
             "name": "AI: Python Debugger: Current File",
             "delegate": "Python Debugger: Current File",
-            "prompt": "The test in jf.py on line 40 is failing."
+            "prompt": "The test in jf2.py on line 29 is failing."
         },
         {
             "name": "Python Debugger: Current File",
