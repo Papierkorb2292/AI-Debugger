@@ -9,7 +9,7 @@
             "request": "launch",
             "name": "AI: Python Debugger: Current File",
             "delegate": "Python Debugger: Current File",
-            "prompt": "The program in aoc23/solve1/day14.py is supposed to read in a grid of the characters . # and O. The program is then supposed to move the O characters up the grid until they hit another # or O. Then, the program is supposed to calculate the distance that each O character is from the bottom edge (starting with 1) and output the sum of those values. The test in line 65 is outputing 154 instead of the expected 64."
+            "prompt": "The test in jf.py on line 40 is failing."
         },
         {
             "name": "Python Debugger: Current File",
