@@ -69,6 +69,8 @@ export class ChatGPTClient implements AIService {
   private apiUrl: string;
   private httpClient: AxiosInstance;
 
+  private costs: number = 0;
+
   constructor(apiKey: string = openAIKey) {
     //console.log("apikey:", apiKey);
     this.apiKey = apiKey;
@@ -110,7 +112,8 @@ export class ChatGPTClient implements AIService {
           });
           const data = response.data;
           console.log("API USAGE:", data.usage)
-          terminalMessageCallback({ role: "info", content: `Token amount: ${data.usage.total_tokens}`})
+          this.costs += (data.usage.prompt_tokens * 2.5 - data.usage.prompt_tokens_details.cached_tokens * 1.25 + data.usage.completion_tokens * 10) / 1_000_000;
+          terminalMessageCallback({ role: "info", content: `Total Costs: ${this.costs.toFixed(6)}€`})
           if (data.choices && data.choices.length > 0) {
               const reply = data.choices[0].message.content;
               // Add the assistants reply to the conversation history
