@@ -29,7 +29,7 @@ export interface AIService {
     sendPrompt(prompt: PromptOptions, terminalMessageCallback: (msg: AITerminalMessage) => void): Promise<string>;
 }
 export interface AIAdminService{
-    getBalance(): Promise<number>;
+    getBalance(terminalMessageCallback: (msg: AITerminalMessage) => void): Promise<number>;
 }
 
 const apiClient = axios.create({
@@ -48,10 +48,10 @@ const apiClientAdmin = axios.create({
 });
 
 export class ChatGPTClientAdmin implements AIAdminService{
-  async getBalance(): Promise<number> {
+  async getBalance(terminalMessageCallback: (msg:AITerminalMessage) => void): Promise<number> {
     try {
       const response = await apiClientAdmin.get("/dashboard/billing/credit_grants");
-      console.log(`Remaining balance: $${response.data.total_available}`);
+      terminalMessageCallback({"role": "info", content: "current balance: " + response.data.total_available})
       return response.data.total_available;
     } catch (error: any) {
       console.error(`Error: ${error.response?.status}, ${error.response?.data || error.message}`);
@@ -485,7 +485,7 @@ export class AIDebuggerService implements vscode.Disposable {
 
   private async initializeBalance() {
     try {
-      const oldBalance: number = await this.aiAdminService.getBalance();
+      const oldBalance: number = await this.aiAdminService.getBalance(this.addTerminalMessage);
       console.log(`Old balance: ${oldBalance}`);
       if (oldBalance < 0.20){
         console.error("Insufficient balance, please top up your account.");
