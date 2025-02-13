@@ -60,6 +60,81 @@ export class ChatGPTClientAdmin implements AIAdminService{
   }
 }
 
+
+export class CoderClient implements AIService {
+
+  private conversationHistory: { role: string, content: string}[] = [ ];
+  
+  private apiUrl: string;
+  private httpClient: AxiosInstance;
+
+  constructor(url: string) {
+    this.apiUrl = `http://${url}/api/generate`;
+    this.httpClient = axios.create({
+      baseURL: this.apiUrl,
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+  }
+
+  constructPrompt(): string {
+    let prompt = ""
+    for (let i = 0; i < this.conversationHistory.length; i++) {
+      prompt += `${this.conversationHistory[i].role}: ${this.conversationHistory[i].content}\n`;
+    }
+    return prompt
+  }
+  
+  async sendPrompt(prompt: PromptOptions, terminalMessageCallback: (msg: AITerminalMessage) => void): Promise<string> {
+        try {
+        // Add the new prompt to the conversation history
+        this.conversationHistory.push({
+          role: prompt.prompt.role || 'user',
+          content: prompt.prompt.cmd,
+      });
+
+      try {
+          const inputData = {
+            model: 'qwen2.5-coder',
+            prompt: this.constructPrompt(),
+            stream: false
+          };
+
+          const response = await this.httpClient.post('', inputData).catch(async (err) => {
+            if(err.response && err.response.status === 429) {
+              const waitTimeSeconds = err.response.headers['retry-after'] || 60;
+              terminalMessageCallback({ role: "info", content: `Hit OpenAI request limit, waiting ${waitTimeSeconds}s...`})
+              console.log(`WARN: Hit request limit, waiting ${waitTimeSeconds}s...`)
+              await new Promise(r => setTimeout(r, waitTimeSeconds*1000));
+              return apiClient.post('', inputData);
+            } else {
+              throw err;
+            }
+          });
+          const splitReply = response.data.response.split('```')
+          const reply = splitReply.length == 1 ? splitReply[0].split("\n")[0].trim() : splitReply[1].split('\n')[0].trim();
+          // Add the assistants reply to the conversation history
+          this.conversationHistory.push({
+              role: "assistant",
+              content: reply,
+          });
+          return reply.trim();
+      } catch (error) {
+          if (axios.isAxiosError(error)) {
+              console.error('Axios error:', error.response?.data);
+          } else {
+              console.error('Unexpected error:', error);
+          }
+          throw error;
+      }
+    } catch (error) {
+      console.error('Error sending prompt:', error);
+      throw error;
+    }
+  }
+}
+
 // TODO remove or rework code (3.5 in url is not optimal)
 export class ChatGPTClient implements AIService {
 
@@ -402,6 +477,13 @@ function createAIInstructionPrompt(userPrompt: PromptOptions) {
       ${getCmdExplanationsForContext(AICmdContext.PAUSED)}
 
       You generate only exactly one command at a time without any explanation.
+      Example:
+      assistent: Sure, let's set a breakpoint \`\`\`BREAKPOINT 1 myfile.txt\`\`\`
+      user: The breakpoint has been set. 
+      assistent: Let's start the program \`\`\`CONTINUE\`\`\`
+      user: ${aiPauseNotification} on line 1 in file=myfile.txt
+      assistent: LINE 1 myfile.txt
+      user: The line contains: print("Hello world")
 
       As a debugger, you will receive the message ${aiPauseNotification} when the code execution is paused, followed by the line number and the file name of the code that will be executed next.
 

@@ -7,7 +7,7 @@ import { PassThrough }from 'stream';
 import { DebugAdapterInlineImplementation } from 'vscode';
 import { wrapDebugAdapter, wrapDebugAdapterStreams } from './DebuggerMiddleware';
 import { DummyDebugAdapter } from './DummyDebugAdapter';
-import { aiCmdRegistry, AIDebuggerService, ChatGPTClient, ChatGPTClientAdmin, ManualNIService } from './AICom';
+import { aiCmdRegistry, AIDebuggerService, ChatGPTClient, ChatGPTClientAdmin, JFClient, ManualNIService } from './AICom';
 import { File } from 'buffer';
 const net = require('net');
 //const cp = require('child_process');
@@ -33,7 +33,7 @@ export function activate(context: vscode.ExtensionContext) {
 			const delegate = session.configuration.delegate;
 			const prompt = session.configuration.prompt as string;
 			const aiDebuggerService = new AIDebuggerService(
-				new ChatGPTClient(),
+				new JFClient(),
 				new ChatGPTClientAdmin(),
 				// Using only vscode.workspace.fs doesn't work for source references, but introducing the ai to source references would make things more complicated. Ignoring them for now...
 				readSourceFile,
