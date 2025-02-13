@@ -443,6 +443,7 @@ export class AIDebuggerService implements vscode.Disposable {
   private readonly addTerminalMessage: (msg: AITerminalMessage) => void = msg => this.terminalAddMessageEventEmitter.fire(msg)
 
   private shouldExit = false;
+  private oldBalance: number = 0;
 
   constructor(
     public aiService: AIService,
@@ -485,9 +486,9 @@ export class AIDebuggerService implements vscode.Disposable {
 
   private async initializeBalance() {
     try {
-      const oldBalance: number = await this.aiAdminService.getBalance(this.addTerminalMessage);
-      console.log(`Old balance: ${oldBalance}`);
-      if (oldBalance < 0.20){
+      this.oldBalance = await this.aiAdminService.getBalance(this.addTerminalMessage);
+      console.log(`Old balance: ${this.oldBalance}`);
+      if (this.oldBalance < 0.20){
         console.error("Insufficient balance, please top up your account.");
         exit(1);
       }
@@ -612,5 +613,7 @@ export class AIDebuggerService implements vscode.Disposable {
 
   exit() {
     this.shouldExit = true;
+    const newBalance: number = this.oldBalance - (this.aiAdminService.getBalance(this.addTerminalMessage) as any)
+    this.addTerminalMessage(("newBalance" + newBalance) as any)
   }
 }
