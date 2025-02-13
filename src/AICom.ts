@@ -613,7 +613,9 @@ export class AIDebuggerService implements vscode.Disposable {
 
   exit() {
     this.shouldExit = true;
-    const newBalance: number = this.oldBalance - (this.aiAdminService.getBalance(this.addTerminalMessage) as any)
-    this.addTerminalMessage(("newBalance" + newBalance) as any)
+    this.aiAdminService.getBalance(this.addTerminalMessage).then(currentBalance => {
+      const balanceDiff: number = this.oldBalance - currentBalance
+      this.addTerminalMessage({ role: "info", content: `balance diff ${balanceDiff}` })
+    })
   }
 }
